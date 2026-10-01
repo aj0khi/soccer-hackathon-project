@@ -67,3 +67,11 @@ npm run build
 3. Explain important changes with evidence from the event stream.
 4. Personalize the output for fans, analysts, and studio workflows.
 5. Render synchronized insight cards, overlays, and recaps.
+
+## Source layout
+
+- `src/types`: provider-neutral event, insight, and experience contracts.
+- `src/application`: pipeline interfaces and orchestration boundaries.
+- `src/infrastructure`: future local fixtures and Azure adapters.
+- `src/app`: the web experience, to be shaped after the product direction is selected.
+- `docs`: architecture decisions and project notes.
