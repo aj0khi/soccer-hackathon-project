@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   CircleHelp,
+  Database,
   GitBranch,
   LayoutDashboard,
   Radio,
@@ -14,6 +15,7 @@ import {
   UserRound,
   Zap,
 } from "lucide-react";
+import { DataIntakePanel } from "@/components/data-intake-panel";
 
 const timeline = [
   { time: "52:10", label: "Villa regain", detail: "High recovery", tone: "lime" },
@@ -32,6 +34,7 @@ const evidence = [
 export default function Home() {
   const [view, setView] = useState<"studio" | "fan">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
+  const [intakeOpen, setIntakeOpen] = useState(false);
 
   return (
     <main className="app-shell">
@@ -59,6 +62,7 @@ export default function Home() {
       <div className="workspace">
         <aside className="rail">
           <button className="rail-button active" aria-label="Match intelligence"><LayoutDashboard size={19} /><span>Match</span></button>
+          <button className="rail-button" aria-label="Open data intake" onClick={() => setIntakeOpen(true)}><Database size={19} /><span>Data</span></button>
           <button className="rail-button" aria-label="Live signals"><Activity size={19} /><span>Signals</span></button>
           <button className="rail-button" aria-label="Broadcast mode"><Radio size={19} /><span>On air</span></button>
           <div className="rail-spacer" />
@@ -107,6 +111,7 @@ export default function Home() {
           <footer className="bottom-note"><span><span className="tiny-dot" /> Synthetic event stream healthy</span><span>Last interpretation 2.4s ago</span><span className="powered">Powered by <strong>Azure AI</strong> · Evidence locked</span></footer>
         </div>
       </div>
+      {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} />}
     </main>
   );
 }
