@@ -27,6 +27,8 @@ The adapter ignores malformed payloads and events for other matches. It implemen
 
 Foundry role mapping and deployment steps are documented in `docs/FOUNDRY_MAPPING.md`.
 
+The Event Hubs infrastructure template and deployment instructions are in `infra/README.md`.
+
 ```bash
 npm run lint
 npm run build

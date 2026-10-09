@@ -109,6 +109,13 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added tests for partial, complete, and absent Foundry configuration.
 - Kept local execution as the fallback until Azure resources and credentials are supplied.
 
+### Azure infrastructure template
+
+- Added `infra/main.bicep` for an Event Hubs namespace, match-events hub, and consumer group.
+- Added safe deployment parameters in `infra/main.parameters.example.json`.
+- Added deployment and identity instructions in `infra/README.md`.
+- Local Azure CLI validation and deployment remain pending because `az` is not installed in this workspace.
+
 ## Current step: live Azure provisioning
 
 The next layer should provision the Event Hubs and Foundry resources, configure identities, and verify the live cloud path against the local pipeline.
@@ -124,6 +131,7 @@ Completed implementation:
 - `src/infrastructure/azure/event-hub-source.ts`
 - `src/application/agents/orchestrate-match-intelligence.ts`
 - `src/infrastructure/azure/foundry-config.ts`
+- `infra/main.bicep`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
 Normalization, synthetic generator, aggregation, data-driven interface, narrative, personalization, and the Azure adapter definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, the optional Event Hubs adapter compiles behind the pipeline port, lint and build pass, and the intake report shows the resulting metrics.
@@ -133,6 +141,8 @@ Testing and demo readiness definition of done: complete. `npm test` passes three
 Agent orchestration definition of done: local version complete. The three handoffs are tested and visible in the application; Foundry deployment and live Azure handoff verification remain pending.
 
 Foundry mapping definition of done: complete. Role IDs, endpoint configuration, handoff contracts, local fallback behavior, and configuration tests are documented; resource provisioning remains pending.
+
+Infrastructure definition of done: template complete. Event Hubs resources, example parameters, local secret protection, and deployment instructions are present; Azure CLI deployment remains pending.
 
 ## Remaining work
 
