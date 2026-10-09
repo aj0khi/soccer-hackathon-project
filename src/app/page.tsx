@@ -16,12 +16,14 @@ import {
   Zap,
 } from "lucide-react";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
 
 const generatedMatch = generateSyntheticMatch();
 const matchState = aggregateMatchState(generatedMatch.events);
+const leadInsight = buildMatchInsight(generatedMatch.events, matchState);
 const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
 const astonState = teamState("AST");
 const brightonState = teamState("BRI");
@@ -48,9 +50,7 @@ const timeline = [
 }));
 
 const evidence = [
-  `Aston have ${astonState?.possessionPct ?? 0}% of the event-weighted possession, but Brighton lead danger at ${brightonState?.dangerScore ?? 0}.`,
-  `Brighton pressure accounts for ${brightonState?.pressureIndex ?? 0}% of recorded pressure intensity after the shift point.`,
-  `${brightonState?.shots ?? 0} Brighton shots carry ${brightonState?.expectedGoals.toFixed(2) ?? "0.00"} expected goals in this feed.`,
+  ...(leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? []),
 ];
 
 export default function Home() {
@@ -98,9 +98,9 @@ export default function Home() {
           </div>
 
           <section className="story-card hero-story">
-            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> LIVE INTERPRETATION</span><h2>{matchState.dominantDangerTeamId === "BRI" ? "Control has changed hands." : "The match is holding its shape."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{Math.min(99, 80 + Math.round(matchState.eventCount / 10))}%</strong><div className="confidence-track"><i style={{ width: `${Math.min(99, 80 + Math.round(matchState.eventCount / 10))}%` }} /></div></div></div>
-            <p className="hero-copy">Aston hold {astonState?.possessionPct ?? 0}% of the event-weighted possession. Brighton carry the danger with a {brightonState?.dangerScore ?? 0} danger score, turning control into transition threat.</p>
-            <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {matchState.eventCount} events support this read <ArrowUpRight size={14} /></div></div>
+            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> EVIDENCE-BACKED READ</span><h2>{leadInsight?.title ?? "The match is still being interpreted."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{leadInsight?.confidence ?? 0}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight?.confidence ?? 0}%` }} /></div></div></div>
+            <p className="hero-copy">{leadInsight?.summary ?? "There is not enough validated event data to make this read."}</p>
+            <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {leadInsight?.evidence.reduce((total, item) => total + item.eventIds.length, 0) ?? 0} supporting events <ArrowUpRight size={14} /></div></div>
           </section>
 
           <div className="split-grid">

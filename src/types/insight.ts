@@ -22,6 +22,7 @@ export interface MatchInsight {
   kind: InsightKind;
   audience: InsightAudience[];
   significance: number;
+  confidence: number;
   title: string;
   summary: string;
   explanation?: string;
