@@ -15,20 +15,42 @@ import {
   UserRound,
   Zap,
 } from "lucide-react";
+import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
+import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
 
+const generatedMatch = generateSyntheticMatch();
+const matchState = aggregateMatchState(generatedMatch.events);
+const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
+const astonState = teamState("AST");
+const brightonState = teamState("BRI");
+const goalCount = (teamId: string) => generatedMatch.events.filter((event) => event.eventType === "goal" && event.teamId === teamId).length;
+const lastMinute = Math.max(...generatedMatch.events.map((event) => event.minute));
+
+function formatEventLabel(event: MatchEvent) {
+  if (event.eventType === "possession_change") return "Possession regain";
+  if (event.eventType === "pressure") return "Pressure spike";
+  if (event.eventType === "shot") return "Dangerous shot";
+  if (event.eventType === "goal") return "Goal";
+  if (event.eventType === "tackle") return "Defensive duel";
+  return "Passing sequence";
+}
+
 const timeline = [
-  { time: "52:10", label: "Villa regain", detail: "High recovery", tone: "lime" },
-  { time: "54:42", label: "Pressure spike", detail: "+31% intensity", tone: "coral" },
-  { time: "58:08", label: "The fork", detail: "Two viable choices", tone: "lime", active: true },
-  { time: "63:14", label: "Goal", detail: "Counter-attack", tone: "coral" },
-  { time: "67:30", label: "Shape shift", detail: "4-2-3-1 → 3-4-2-1", tone: "gold" },
-];
+  ...generatedMatch.events.filter((event) => event.minute >= 48 && ["possession_change", "pressure", "shot", "goal"].includes(event.eventType)).slice(0, 5),
+].map((event, index) => ({
+  time: `${String(event.minute).padStart(2, "0")}:${String((index * 17 + 10) % 60).padStart(2, "0")}`,
+  label: formatEventLabel(event),
+  detail: event.eventType === "pressure" ? `${Math.round(event.intensity * 100)}% intensity` : event.eventType === "shot" ? `${event.expectedGoals.toFixed(2)} xG` : event.teamId === "BRI" ? "Brighton signal" : "Aston response",
+  tone: event.eventType === "goal" || event.eventType === "shot" ? "coral" : event.eventType === "pressure" ? "gold" : "lime",
+  active: index === 2,
+}));
 
 const evidence = [
-  "Team A have held 64% of the ball, but only 2 of their last 11 possessions entered the box.",
-  "Team B are recovering the ball 18.4m higher than their first-half average.",
-  "Three consecutive attacks have targeted the same channel behind the left-back.",
+  `Aston have ${astonState?.possessionPct ?? 0}% of the event-weighted possession, but Brighton lead danger at ${brightonState?.dangerScore ?? 0}.`,
+  `Brighton pressure accounts for ${brightonState?.pressureIndex ?? 0}% of recorded pressure intensity after the shift point.`,
+  `${brightonState?.shots ?? 0} Brighton shots carry ${brightonState?.expectedGoals.toFixed(2) ?? "0.00"} expected goals in this feed.`,
 ];
 
 export default function Home() {
@@ -46,7 +68,7 @@ export default function Home() {
             <p className="brand-subtitle">Match intelligence, beyond the score</p>
           </div>
         </div>
-        <div className="match-status"><span className="live-dot" /> LIVE <span className="status-divider" /> 2ND HALF <span className="clock">68:24</span></div>
+        <div className="match-status"><span className="live-dot" /> LIVE <span className="status-divider" /> 2ND HALF <span className="clock">{lastMinute}:00</span></div>
         <div className="top-actions">
           <button className="icon-button" aria-label="Open settings"><Settings2 size={17} /></button>
           <button className="profile-button"><UserRound size={16} /> Studio view <ChevronDown size={15} /></button>
@@ -55,8 +77,8 @@ export default function Home() {
 
       <section className="match-strip">
         <div className="competition"><span className="competition-kicker">SYNTHETIC MATCH / PREMIER LEAGUE MODEL</span><strong>Riverside Stadium</strong></div>
-        <div className="scoreline"><span>AST</span><b>1</b><em>—</em><b className="away-score">1</b><span>BRI</span></div>
-        <div className="match-meta"><span>68:24</span><small>Match day 14</small></div>
+        <div className="scoreline"><span>AST</span><b>{goalCount("AST")}</b><em>—</em><b className="away-score">{goalCount("BRI")}</b><span>BRI</span></div>
+        <div className="match-meta"><span>{lastMinute}:00</span><small>{matchState.eventCount} events interpreted</small></div>
       </section>
 
       <div className="workspace">
@@ -76,22 +98,22 @@ export default function Home() {
           </div>
 
           <section className="story-card hero-story">
-            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> LIVE INTERPRETATION</span><h2>Control has changed hands.</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>92%</strong><div className="confidence-track"><i /></div></div></div>
-            <p className="hero-copy">Aston have the ball. Brighton have the danger. The game has moved from possession to transition, and the next mistake will be worth more than the last ten passes.</p>
-            <div className="story-proof"><div className="proof-stat"><strong>+18.4m</strong><span>recovery height</span></div><div className="proof-stat"><strong>3 / 3</strong><span>attacks behind LB</span></div><div className="proof-stat"><strong>0.61</strong><span>transition xG</span></div><div className="proof-source"><GitBranch size={15} /> 14 events support this read <ArrowUpRight size={14} /></div></div>
+            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> LIVE INTERPRETATION</span><h2>{matchState.dominantDangerTeamId === "BRI" ? "Control has changed hands." : "The match is holding its shape."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{Math.min(99, 80 + Math.round(matchState.eventCount / 10))}%</strong><div className="confidence-track"><i style={{ width: `${Math.min(99, 80 + Math.round(matchState.eventCount / 10))}%` }} /></div></div></div>
+            <p className="hero-copy">Aston hold {astonState?.possessionPct ?? 0}% of the event-weighted possession. Brighton carry the danger with a {brightonState?.dangerScore ?? 0} danger score, turning control into transition threat.</p>
+            <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {matchState.eventCount} events support this read <ArrowUpRight size={14} /></div></div>
           </section>
 
           <div className="split-grid">
             <section className="story-card perception-card">
               <div className="card-label"><span className="number-label">01</span> THE PERCEIVED MATCH</div>
               <div className="big-perception">“Aston are<br /><i>dominating.</i>”</div>
-              <div className="perception-meter"><div className="meter-label"><span>64% possession</span><span className="muted">But only 2 box entries</span></div><div className="meter"><i style={{ width: "64%" }} /><b style={{ left: "64%" }} /></div></div>
+              <div className="perception-meter"><div className="meter-label"><span>{astonState?.possessionPct ?? 0}% possession</span><span className="muted">But danger says otherwise</span></div><div className="meter"><i style={{ width: `${astonState?.possessionPct ?? 0}%` }} /><b style={{ left: `${astonState?.possessionPct ?? 0}%` }} /></div></div>
               <p className="card-note">Possession is loud. Territory is not the same as threat.</p>
             </section>
 
             <section className="story-card evidence-card">
               <div className="card-label evidence-label"><span className="number-label">02</span> THE EVIDENCE MATCH <span className="signal-badge">DATA SAYS</span></div>
-              <h3>Brighton are<br /><span>setting the trap.</span></h3>
+              <h3>Brighton are<br /><span>{matchState.dominantDangerTeamId === "BRI" ? "setting the trap." : "reading the game."}</span></h3>
               <ul className="evidence-list">{evidence.map((item) => <li key={item}><span className="check-mark">+</span><span>{item}</span></li>)}</ul>
               <button className="text-action">Open evidence trail <ArrowUpRight size={14} /></button>
             </section>
