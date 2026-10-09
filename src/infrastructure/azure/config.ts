@@ -5,7 +5,7 @@ export interface AzureEventHubConfig {
 }
 
 export function getAzureEventHubConfig(
-  environment: NodeJS.ProcessEnv = process.env,
+  environment: Record<string, string | undefined> = process.env,
 ): AzureEventHubConfig | undefined {
   const fullyQualifiedNamespace = environment.AZURE_EVENT_HUB_NAMESPACE?.trim();
   const eventHubName = environment.AZURE_EVENT_HUB_NAME?.trim();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
+import { getFoundryProjectConfig, isFoundryReady } from "@/infrastructure/azure/foundry-config";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
 import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
@@ -60,5 +61,13 @@ describe("match intelligence pipeline", () => {
       "experience-agent",
     ]);
     expect(run.renderedInsight?.profileId).toBe("fan");
+  });
+
+  it("keeps Foundry configuration optional until every role is mapped", () => {
+    const partial = getFoundryProjectConfig({ AZURE_AI_PROJECT_ENDPOINT: "https://example.test", FOUNDRY_MATCH_STATE_AGENT_ID: "state" });
+    const complete = getFoundryProjectConfig({ AZURE_AI_PROJECT_ENDPOINT: "https://example.test", FOUNDRY_MATCH_STATE_AGENT_ID: "state", FOUNDRY_EVIDENCE_AGENT_ID: "evidence", FOUNDRY_EXPERIENCE_AGENT_ID: "experience" });
+    expect(isFoundryReady(partial)).toBe(false);
+    expect(isFoundryReady(complete)).toBe(true);
+    expect(isFoundryReady(getFoundryProjectConfig({}))).toBe(false);
   });
 });

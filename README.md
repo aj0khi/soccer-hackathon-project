@@ -25,6 +25,8 @@ The server-only Event Hubs adapter is optional for local development. Set `AZURE
 
 The adapter ignores malformed payloads and events for other matches. It implements the provider-neutral `EventSource` interface in `src/application/pipeline.ts`, so the local synthetic generator remains available when Azure is not configured.
 
+Foundry role mapping and deployment steps are documented in `docs/FOUNDRY_MAPPING.md`.
+
 ```bash
 npm run lint
 npm run build
