@@ -1,11 +1,6 @@
 # Inside the Game
 
 An Azure-ready workspace for turning synthetic, football-realistic events into explainable match intelligence and personalized stories.
-
-The product direction is intentionally still open. The first stable boundary is the incoming match-event contract in `src/types/match.ts`; future ingestion, analytics, agent, and rendering work should build around that contract.
-
-## Stack
-
 - Next.js 16 with the App Router
 - React 19 and TypeScript
 - Tailwind CSS 4
@@ -23,6 +18,12 @@ npm run dev
 Open `http://localhost:3000` in a browser.
 
 Validation commands:
+
+## Azure event source
+
+The server-only Event Hubs adapter is optional for local development. Set `AZURE_EVENT_HUB_NAMESPACE` and `AZURE_EVENT_HUB_NAME` in `.env.local` to enable it; authentication uses `DefaultAzureCredential`, so local Azure CLI or managed identity credentials can be used without storing a secret in the application.
+
+The adapter ignores malformed payloads and events for other matches. It implements the provider-neutral `EventSource` interface in `src/application/pipeline.ts`, so the local synthetic generator remains available when Azure is not configured.
 
 ```bash
 npm run lint

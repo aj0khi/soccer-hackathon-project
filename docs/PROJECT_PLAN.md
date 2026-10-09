@@ -78,9 +78,17 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Player Focus follows a selected player and shifts the emphasis toward individual impact.
 - All modes preserve the same underlying confidence and event evidence.
 
-## Current step: Azure integration
+### Azure integration
 
-The next layer should connect the provider-neutral pipeline to Azure services without moving secrets or SDK types into the domain contracts.
+- Added an optional server-only Azure Event Hubs source behind the `EventSource` interface.
+- Uses `DefaultAzureCredential` for local Azure CLI or managed identity authentication.
+- Filters events by `matchId` and rejects malformed event envelopes.
+- Local synthetic data remains the fallback when Azure environment variables are absent.
+- Azure resource provisioning and live end-to-end verification are still pending.
+
+## Current step: testing and demo readiness
+
+The next layer should make the pipeline repeatable, test malformed and partial data, and prepare a short judge-facing demo.
 
 Completed implementation:
 
@@ -89,16 +97,18 @@ Completed implementation:
 - `src/lib/analytics/aggregate-match-state.ts`
 - `src/lib/narrative/build-match-insight.ts`
 - `src/lib/narrative/render-personalized-insight.ts`
+- `src/infrastructure/azure/config.ts`
+- `src/infrastructure/azure/event-hub-source.ts`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
-Normalization, synthetic generator, aggregation, data-driven interface, narrative, and personalization definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, lint and build pass, and the intake report shows the resulting metrics.
+Normalization, synthetic generator, aggregation, data-driven interface, narrative, personalization, and the Azure adapter definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, the optional Event Hubs adapter compiles behind the pipeline port, lint and build pass, and the intake report shows the resulting metrics.
 
 ## Remaining work
 
-1. **Azure integration**
-   - Move ingestion to event-driven services and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
-2. **Testing and demo readiness**
+1. **Testing and demo readiness**
    - Add parser tests, malformed-data tests, a repeatable demo scenario, deployment instructions, and a two-minute demo script.
+2. **Azure deployment and agent orchestration**
+   - Provision event-driven Azure resources and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
 3. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
