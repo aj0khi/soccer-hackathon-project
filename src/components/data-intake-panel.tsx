@@ -6,9 +6,11 @@ import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { DatasetField, DatasetFormat, DatasetReport } from "@/types/dataset";
+import type { MatchEvent } from "@/types/match";
 
 interface DataIntakePanelProps {
   onClose: () => void;
+  onDataReady?: (events: MatchEvent[], report: DatasetReport) => void;
 }
 
 type DataRow = Record<string, unknown>;
@@ -110,6 +112,12 @@ function profileDataset(content: string, fileName: string): DatasetReport {
   }
 }
 
+function readDataset(content: string, fileName: string) {
+  const report = profileDataset(content, fileName);
+  const { rows } = parseContent(content, fileName);
+  return { report, events: normalizeRows(rows, "uploaded-match").events };
+}
+
 const sampleData = JSON.stringify([
   { timestamp: 3488000, event: "pressure", team: "BRI", player: "P-12", x: 68, y: 42, intensity: 0.82, durationSeconds: 2.4 },
   { timestamp: 3491000, event: "possession_change", team: "BRI", player: "P-12", previousTeamId: "AST", nextTeamId: "BRI", x: 68, y: 42 },
@@ -137,7 +145,7 @@ function getSyntheticReport() {
   };
 }
 
-export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
+export function DataIntakePanel({ onClose, onDataReady }: DataIntakePanelProps) {
   const [report, setReport] = useState<DatasetReport | null>(null);
   const [isReading, setIsReading] = useState(false);
 
@@ -145,11 +153,26 @@ export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
     setIsReading(true);
     const reader = new FileReader();
     reader.onload = () => {
-      setReport(profileDataset(String(reader.result), file.name));
+      const result = readDataset(String(reader.result), file.name);
+      setReport(result.report);
+      onDataReady?.(result.events, result.report);
       setIsReading(false);
     };
     reader.onerror = () => setIsReading(false);
     reader.readAsText(file);
+  };
+
+  const inspectSample = () => {
+    const result = readDataset(sampleData, "synthetic-riverside-feed.json");
+    setReport(result.report);
+    onDataReady?.(result.events, result.report);
+  };
+
+  const runScenario = () => {
+    const match = generateSyntheticMatch();
+    const report = getSyntheticReport();
+    setReport(report);
+    onDataReady?.(match.events, report);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -163,7 +186,7 @@ export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
       <section className="intake-panel">
         <header className="intake-header"><div><span className="live-label"><span className="tiny-dot" /> INPUT HEALTH / 01</span><h2 id="intake-title">Bring your match data.</h2><p>Second Story profiles the feed before it makes a claim.</p></div><button className="icon-button" onClick={onClose} aria-label="Close data intake"><X size={18} /></button></header>
         <label className="upload-zone"><Upload size={21} /><strong>Drop a file to inspect</strong><span>JSON, CSV, or NDJSON · synthetic events only</span><input type="file" accept=".json,.csv,.ndjson,.jsonl,application/json,text/csv" onChange={handleFileChange} /></label>
-        <div className="intake-actions"><button className="sample-button" onClick={() => setReport(profileDataset(sampleData, "synthetic-riverside-feed.json"))}><FileJson size={15} /> Inspect a sample feed</button><button className="sample-button scenario-button" onClick={() => setReport(getSyntheticReport())}><WandSparkles size={15} /> Run momentum scenario <Play size={12} /></button></div>
+        <div className="intake-actions"><button className="sample-button" onClick={inspectSample}><FileJson size={15} /> Inspect a sample feed</button><button className="sample-button scenario-button" onClick={runScenario}><WandSparkles size={15} /> Run momentum scenario <Play size={12} /></button></div>
         {isReading && <div className="intake-loading"><LoaderCircle size={16} className="spin" /> Profiling event structure...</div>}
         {report && <ReportView report={report} />}
         <footer className="intake-footer"><span><TriangleAlert size={14} /> Unsupported fields stay visible, never invented.</span><span>Local adapter preview</span></footer>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -17,24 +17,16 @@ import {
 } from "lucide-react";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
-import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
 
 const generatedMatch = generateSyntheticMatch();
-const matchState = aggregateMatchState(generatedMatch.events);
-const leadInsight = buildMatchInsight(generatedMatch.events, matchState);
 const audienceProfiles = {
   studio: { profileId: "studio", locale: "en", detailLevel: "deep" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST", "BRI"], followedPlayerIds: [], interests: ["tactics", "evidence"] },
   fan: { profileId: "fan", locale: "en", detailLevel: "brief" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST"], followedPlayerIds: [], interests: ["momentum", "goals"] },
   player: { profileId: "player", locale: "en", detailLevel: "standard" as const, deliveryModes: ["screen" as const], followedTeamIds: ["BRI"], followedPlayerIds: ["BRI-P-09"], interests: ["player impact", "transitions"] },
 };
-const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
-const astonState = teamState("AST");
-const brightonState = teamState("BRI");
-const goalCount = (teamId: string) => generatedMatch.events.filter((event) => event.eventType === "goal" && event.teamId === teamId).length;
-const lastMinute = Math.max(...generatedMatch.events.map((event) => event.minute));
 
 function formatEventLabel(event: MatchEvent) {
   if (event.eventType === "possession_change") return "Possession regain";
@@ -45,26 +37,37 @@ function formatEventLabel(event: MatchEvent) {
   return "Passing sequence";
 }
 
-const timeline = [
-  ...generatedMatch.events.filter((event) => event.minute >= 48 && ["possession_change", "pressure", "shot", "goal"].includes(event.eventType)).slice(0, 5),
-].map((event, index) => ({
-  time: `${String(event.minute).padStart(2, "0")}:${String((index * 17 + 10) % 60).padStart(2, "0")}`,
-  label: formatEventLabel(event),
-  detail: event.eventType === "pressure" ? `${Math.round(event.intensity * 100)}% intensity` : event.eventType === "shot" ? `${event.expectedGoals.toFixed(2)} xG` : event.teamId === "BRI" ? "Brighton signal" : "Aston response",
-  tone: event.eventType === "goal" || event.eventType === "shot" ? "coral" : event.eventType === "pressure" ? "gold" : "lime",
-  active: index === 2,
-}));
-
-const evidence = [
-  ...(leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? []),
-];
+function createDashboardModel(events: MatchEvent[]) {
+  const matchState = aggregateMatchState(events);
+  const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
+  const timeline = events.filter((event) => event.minute >= 48 && ["possession_change", "pressure", "shot", "goal"].includes(event.eventType)).slice(0, 5).map((event, index) => ({
+    time: `${String(event.minute).padStart(2, "0")}:${String((index * 17 + 10) % 60).padStart(2, "0")}`,
+    label: formatEventLabel(event),
+    detail: event.eventType === "pressure" ? `${Math.round(event.intensity * 100)}% intensity` : event.eventType === "shot" ? `${event.expectedGoals.toFixed(2)} xG` : event.teamId === "BRI" ? "Brighton signal" : "Aston response",
+    tone: event.eventType === "goal" || event.eventType === "shot" ? "coral" : event.eventType === "pressure" ? "gold" : "lime",
+    active: index === 2,
+  }));
+  return {
+    matchState,
+    astonState: teamState("AST"),
+    brightonState: teamState("BRI"),
+    goalCount: (teamId: string) => events.filter((event) => event.eventType === "goal" && event.teamId === teamId).length,
+    lastMinute: events.length ? Math.max(...events.map((event) => event.minute)) : 0,
+    timeline,
+  };
+}
 
 export default function Home() {
   const [view, setView] = useState<"studio" | "fan" | "player">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const agentRun = runMatchIntelligenceAgents(generatedMatch.events, audienceProfiles[view]);
+  const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
+  const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
+  const { matchState, astonState, brightonState, goalCount, lastMinute, timeline } = model;
+  const agentRun = runMatchIntelligenceAgents(activeEvents, audienceProfiles[view]);
+  const leadInsight = agentRun.insight;
   const renderedInsight = agentRun.renderedInsight;
+  const evidence = leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? [];
 
   return (
     <main className="app-shell">
@@ -141,7 +144,7 @@ export default function Home() {
           <footer className="bottom-note"><span><span className="tiny-dot" /> Synthetic event stream healthy</span><span>{agentRun.trace.length} agents handed off successfully</span><span className="powered">Powered by <strong>Azure AI</strong> · Evidence locked</span></footer>
         </div>
       </div>
-      {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} />}
+      {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} onDataReady={(events) => { if (events.length > 0) setActiveEvents(events); }} />}
     </main>
   );
 }

@@ -62,6 +62,8 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - The main interpretation uses calculated control, danger, rhythm, chaos, and expected goals.
 - Evidence bullets and the match-memory timeline are populated from the event stream.
 - The intake panel and main studio surface share the same normalization and aggregation paths.
+- Valid uploaded JSON, CSV, or NDJSON events now replace the active dashboard event stream.
+- The dashboard recalculates its score, timeline, metrics, narrative, and agent trace from the uploaded events.
 
 ### Evidence-backed narrative engine
 
@@ -117,9 +119,9 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Local Azure CLI validation and deployment remain pending because `az` is not installed in this workspace.
 - Added a student-plan setup and cleanup guide with the Basic tier as the default.
 
-## Current step: live Azure provisioning
+## Current step: recap and multilingual output
 
-The next layer should provision the Event Hubs and Foundry resources, configure identities, and verify the live cloud path against the local pipeline.
+The next layer should turn the same grounded insight state into a full-match recap and language-specific renderings while Azure provisioning is pending.
 
 Completed implementation:
 
@@ -147,9 +149,11 @@ Infrastructure definition of done: template complete. Event Hubs resources, exam
 
 ## Remaining work
 
-1. **Live Azure provisioning**
+1. **Recap and multilingual output**
+   - Generate first-half, second-half, and full-time recaps with evidence references.
+2. **Live Azure provisioning**
    - Provision event-driven Azure resources, configure identities, create the three Foundry agents, and verify the live handoffs.
-2. **Submission package**
+3. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
 ## Guardrails
