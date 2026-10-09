@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
+import { renderPersonalizedInsight } from "@/lib/narrative/render-personalized-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
@@ -24,6 +25,11 @@ import { DataIntakePanel } from "@/components/data-intake-panel";
 const generatedMatch = generateSyntheticMatch();
 const matchState = aggregateMatchState(generatedMatch.events);
 const leadInsight = buildMatchInsight(generatedMatch.events, matchState);
+const audienceProfiles = {
+  studio: { profileId: "studio", locale: "en", detailLevel: "deep" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST", "BRI"], followedPlayerIds: [], interests: ["tactics", "evidence"] },
+  fan: { profileId: "fan", locale: "en", detailLevel: "brief" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST"], followedPlayerIds: [], interests: ["momentum", "goals"] },
+  player: { profileId: "player", locale: "en", detailLevel: "standard" as const, deliveryModes: ["screen" as const], followedTeamIds: ["BRI"], followedPlayerIds: ["BRI-P-09"], interests: ["player impact", "transitions"] },
+};
 const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
 const astonState = teamState("AST");
 const brightonState = teamState("BRI");
@@ -54,9 +60,10 @@ const evidence = [
 ];
 
 export default function Home() {
-  const [view, setView] = useState<"studio" | "fan">("studio");
+  const [view, setView] = useState<"studio" | "fan" | "player">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const renderedInsight = leadInsight ? renderPersonalizedInsight(leadInsight, audienceProfiles[view]) : undefined;
 
   return (
     <main className="app-shell">
@@ -71,7 +78,7 @@ export default function Home() {
         <div className="match-status"><span className="live-dot" /> LIVE <span className="status-divider" /> 2ND HALF <span className="clock">{lastMinute}:00</span></div>
         <div className="top-actions">
           <button className="icon-button" aria-label="Open settings"><Settings2 size={17} /></button>
-          <button className="profile-button"><UserRound size={16} /> Studio view <ChevronDown size={15} /></button>
+          <button className="profile-button"><UserRound size={16} /> {view === "player" ? "Player focus" : view === "fan" ? "Fan lens" : "Studio view"} <ChevronDown size={15} /></button>
         </div>
       </header>
 
@@ -94,12 +101,12 @@ export default function Home() {
         <div className="content-area">
           <div className="page-heading">
             <div><p className="eyebrow"><span className="eyebrow-line" /> LIVE READ / 03</p><h1>The match is not saying what it looks like.</h1></div>
-            <div className="audience-switcher"><button className={view === "studio" ? "selected" : ""} onClick={() => setView("studio")}>Studio</button><button className={view === "fan" ? "selected" : ""} onClick={() => setView("fan")}>Fan lens</button></div>
+            <div className="audience-switcher"><button className={view === "studio" ? "selected" : ""} onClick={() => setView("studio")}>Studio</button><button className={view === "fan" ? "selected" : ""} onClick={() => setView("fan")}>Fan lens</button><button className={view === "player" ? "selected" : ""} onClick={() => setView("player")}>Player focus</button></div>
           </div>
 
           <section className="story-card hero-story">
-            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> EVIDENCE-BACKED READ</span><h2>{leadInsight?.title ?? "The match is still being interpreted."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{leadInsight?.confidence ?? 0}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight?.confidence ?? 0}%` }} /></div></div></div>
-            <p className="hero-copy">{leadInsight?.summary ?? "There is not enough validated event data to make this read."}</p>
+            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> {view === "studio" ? "EVIDENCE-BACKED READ" : view === "fan" ? "FAN LENS / PLAIN LANGUAGE" : "PLAYER FOCUS / BRIGHTON-P-09"}</span><h2>{leadInsight?.title ?? "The match is still being interpreted."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{leadInsight?.confidence ?? 0}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight?.confidence ?? 0}%` }} /></div></div></div>
+            <p className="hero-copy">{renderedInsight?.text ?? "There is not enough validated event data to make this read."}</p>
             <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {leadInsight?.evidence.reduce((total, item) => total + item.eventIds.length, 0) ?? 0} supporting events <ArrowUpRight size={14} /></div></div>
           </section>
 

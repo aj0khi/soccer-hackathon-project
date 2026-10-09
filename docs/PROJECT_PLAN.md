@@ -71,9 +71,16 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Renders the confidence score and supporting-event count in the live studio story.
 - The current wording is deterministic and provider-neutral; an Azure AI narrative provider can be added behind the same contract.
 
-## Current step: personalization
+### Personalization
 
-The next layer should render the same validated insight differently for a casual fan, analyst, studio producer, or player-focused viewer.
+- Studio mode renders deep evidence and methodology.
+- Fan Lens renders the same insight in concise plain language.
+- Player Focus follows a selected player and shifts the emphasis toward individual impact.
+- All modes preserve the same underlying confidence and event evidence.
+
+## Current step: Azure integration
+
+The next layer should connect the provider-neutral pipeline to Azure services without moving secrets or SDK types into the domain contracts.
 
 Completed implementation:
 
@@ -81,19 +88,18 @@ Completed implementation:
 - `src/lib/simulation/generate-match.ts`
 - `src/lib/analytics/aggregate-match-state.ts`
 - `src/lib/narrative/build-match-insight.ts`
+- `src/lib/narrative/render-personalized-insight.ts`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
-Normalization, synthetic generator, aggregation, data-driven interface, and narrative definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, lint and build pass, and the intake report shows the resulting metrics.
+Normalization, synthetic generator, aggregation, data-driven interface, narrative, and personalization definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, lint and build pass, and the intake report shows the resulting metrics.
 
 ## Remaining work
 
-1. **Personalization**
-   - Add fan, player-focused, analyst, studio, and multilingual output modes.
-2. **Azure integration**
+1. **Azure integration**
    - Move ingestion to event-driven services and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
-3. **Testing and demo readiness**
+2. **Testing and demo readiness**
    - Add parser tests, malformed-data tests, a repeatable demo scenario, deployment instructions, and a two-minute demo script.
-4. **Submission package**
+3. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
 ## Guardrails
