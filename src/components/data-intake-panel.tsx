@@ -1,8 +1,9 @@
 "use client";
 
 import { ChangeEvent, useState } from "react";
-import { Check, FileJson, LoaderCircle, TriangleAlert, Upload, X } from "lucide-react";
+import { Check, FileJson, LoaderCircle, Play, TriangleAlert, Upload, WandSparkles, X } from "lucide-react";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
+import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { DatasetField, DatasetFormat, DatasetReport } from "@/types/dataset";
 
 interface DataIntakePanelProps {
@@ -114,6 +115,23 @@ const sampleData = JSON.stringify([
   { timestamp: 3509000, event: "goal", team: "BRI", player: "P-09" },
 ], null, 2);
 
+function getSyntheticReport() {
+  const match = generateSyntheticMatch();
+  return {
+    fileName: "synthetic-momentum-shift",
+    format: "json" as DatasetFormat,
+    rowCount: match.events.length,
+    recognizedEvents: match.events.length,
+    normalizedEvents: match.events.length,
+    rejectedEvents: 0,
+    unsupportedEvents: 0,
+    readiness: 100,
+    fields: ["eventType", "teamId", "playerId", "timestampMs", "event-specific fields"].map((sourceName) => ({ sourceName, canonicalName: sourceName, status: "recognized" as const, confidence: 100 })),
+    missingFields: [],
+    warnings: ["Scenario seeded for a deliberate control-to-transition shift."],
+  };
+}
+
 export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
   const [report, setReport] = useState<DatasetReport | null>(null);
   const [isReading, setIsReading] = useState(false);
@@ -140,7 +158,7 @@ export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
       <section className="intake-panel">
         <header className="intake-header"><div><span className="live-label"><span className="tiny-dot" /> INPUT HEALTH / 01</span><h2 id="intake-title">Bring your match data.</h2><p>Second Story profiles the feed before it makes a claim.</p></div><button className="icon-button" onClick={onClose} aria-label="Close data intake"><X size={18} /></button></header>
         <label className="upload-zone"><Upload size={21} /><strong>Drop a file to inspect</strong><span>JSON, CSV, or NDJSON · synthetic events only</span><input type="file" accept=".json,.csv,.ndjson,.jsonl,application/json,text/csv" onChange={handleFileChange} /></label>
-        <button className="sample-button" onClick={() => setReport(profileDataset(sampleData, "synthetic-riverside-feed.json"))}><FileJson size={15} /> Inspect a sample feed</button>
+        <div className="intake-actions"><button className="sample-button" onClick={() => setReport(profileDataset(sampleData, "synthetic-riverside-feed.json"))}><FileJson size={15} /> Inspect a sample feed</button><button className="sample-button scenario-button" onClick={() => setReport(getSyntheticReport())}><WandSparkles size={15} /> Run momentum scenario <Play size={12} /></button></div>
         {isReading && <div className="intake-loading"><LoaderCircle size={16} className="spin" /> Profiling event structure...</div>}
         {report && <ReportView report={report} />}
         <footer className="intake-footer"><span><TriangleAlert size={14} /> Unsupported fields stay visible, never invented.</span><span>Local adapter preview</span></footer>

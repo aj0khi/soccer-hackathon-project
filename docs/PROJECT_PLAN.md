@@ -42,15 +42,23 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Reports rejected rows with row numbers and concrete reasons.
 - Keeps incomplete events out of downstream analysis instead of inventing values.
 
-## Current step: synthetic match generator
+### Synthetic match generator
 
-The next layer should create repeatable synthetic event streams with deliberate match-state changes so the interface can be driven by real event flow instead of fixed demo values.
+- Produces a deterministic 90-minute event stream from a seed.
+- Includes passes, pressure, possession changes, tackles, shots, and a goal.
+- Deliberately shifts from Aston control to Brighton transition pressure after minute 54.
+- Available in the intake panel as the `Run momentum scenario` action.
+
+## Current step: live match-state aggregation
+
+The next layer should consume normalized events and calculate match state so the interface can be driven by event flow instead of fixed demo values.
 
 Completed implementation:
 
 - `src/lib/ingestion/normalize-events.ts`
+- `src/lib/simulation/generate-match.ts`
 
-Normalization definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, lint and build pass, and the intake report shows canonical versus rejected counts.
+Normalization and synthetic generator definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, lint and build pass, and the intake report shows canonical versus rejected counts.
 
 ## Remaining work
 
