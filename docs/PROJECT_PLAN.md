@@ -49,34 +49,38 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Deliberately shifts from Aston control to Brighton transition pressure after minute 54.
 - Available in the intake panel as the `Run momentum scenario` action.
 
-## Current step: live match-state aggregation
+### Live match-state aggregation
 
-The next layer should consume normalized events and calculate match state so the interface can be driven by event flow instead of fixed demo values.
+- Calculates possession share, pass accuracy, pressure index, shots, and expected goals by team.
+- Derives control, danger, rhythm, and chaos scores from canonical events.
+- Uses the same aggregator for uploaded data and the synthetic scenario.
+- Surfaces the derived state in the intake report before narrative generation.
+
+## Current step: data-driven interface
+
+The next layer should replace the dashboard's fixed story values with the normalized event stream and derived match state.
 
 Completed implementation:
 
 - `src/lib/ingestion/normalize-events.ts`
 - `src/lib/simulation/generate-match.ts`
+- `src/lib/analytics/aggregate-match-state.ts`
 
-Normalization and synthetic generator definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, lint and build pass, and the intake report shows canonical versus rejected counts.
+Normalization, synthetic generator, and aggregation definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, lint and build pass, and the intake report shows the resulting metrics.
 
 ## Remaining work
 
-1. **Synthetic match generator**
-   - Create repeatable football-realistic event streams with deliberate momentum shifts.
-2. **Live match-state aggregation**
-   - Calculate possession, pressure, recovery height, pass quality, shot quality, rhythm, and control versus chaos.
-3. **Data-driven interface**
+1. **Data-driven interface**
    - Replace hardcoded dashboard values with the normalized event stream and derived state.
-4. **Evidence-backed narrative engine**
+2. **Evidence-backed narrative engine**
    - Generate explanations linked to supporting event IDs and metrics.
-5. **Personalization**
+3. **Personalization**
    - Add fan, player-focused, analyst, studio, and multilingual output modes.
-6. **Azure integration**
+4. **Azure integration**
    - Move ingestion to event-driven services and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
-7. **Testing and demo readiness**
+5. **Testing and demo readiness**
    - Add parser tests, malformed-data tests, a repeatable demo scenario, deployment instructions, and a two-minute demo script.
-8. **Submission package**
+6. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
 ## Guardrails

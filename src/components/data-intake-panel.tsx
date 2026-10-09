@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState } from "react";
 import { Check, FileJson, LoaderCircle, Play, TriangleAlert, Upload, WandSparkles, X } from "lucide-react";
+import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { DatasetField, DatasetFormat, DatasetReport } from "@/types/dataset";
@@ -73,6 +74,7 @@ function profileDataset(content: string, fileName: string): DatasetReport {
   try {
     const { format, rows } = parseContent(content, fileName);
     const normalization = normalizeRows(rows, "uploaded-match");
+    const matchState = aggregateMatchState(normalization.events);
     const firstRow = rows[0] ?? {};
     const fields: DatasetField[] = Object.entries(firstRow).map(([sourceName, value]) => {
       const canonicalName = aliases[normalizeKey(sourceName)];
@@ -100,6 +102,7 @@ function profileDataset(content: string, fileName: string): DatasetReport {
       readiness,
       fields,
       missingFields,
+      matchState,
       warnings: [...(format === "unknown" ? ["This file is not JSON, CSV, or NDJSON."] : missingFields.length ? ["Some insights will remain unavailable until the missing fields are mapped."] : []), ...normalization.rejected.slice(0, 3).map((item) => `Row ${item.rowIndex}: ${item.reason}.`)],
     };
   } catch {
@@ -117,6 +120,7 @@ const sampleData = JSON.stringify([
 
 function getSyntheticReport() {
   const match = generateSyntheticMatch();
+  const matchState = aggregateMatchState(match.events);
   return {
     fileName: "synthetic-momentum-shift",
     format: "json" as DatasetFormat,
@@ -128,6 +132,7 @@ function getSyntheticReport() {
     readiness: 100,
     fields: ["eventType", "teamId", "playerId", "timestampMs", "event-specific fields"].map((sourceName) => ({ sourceName, canonicalName: sourceName, status: "recognized" as const, confidence: 100 })),
     missingFields: [],
+    matchState,
     warnings: ["Scenario seeded for a deliberate control-to-transition shift."],
   };
 }
@@ -172,6 +177,15 @@ function ReportView({ report }: { report: DatasetReport }) {
     <div className="report-heading"><div><span className="card-label">DATASET PROFILE</span><h3>{report.fileName}</h3></div><div className="readiness"><strong>{report.readiness}%</strong><span>insight readiness</span></div></div>
     <div className="report-stats"><div><strong>{report.rowCount}</strong><span>rows read</span></div><div><strong className="good">{report.normalizedEvents}</strong><span>canonical events</span></div><div><strong className={report.rejectedEvents ? "warn" : "good"}>{report.rejectedEvents}</strong><span>rejected with reason</span></div></div>
     <div className="field-list">{report.fields.slice(0, 6).map((field) => <div className="field-row" key={field.sourceName}><span className={field.status === "unavailable" ? "field-status missing" : "field-status"}>{field.status === "unavailable" ? <TriangleAlert size={12} /> : <Check size={12} />}</span><span className="field-source">{field.sourceName}</span><span className="field-arrow">→</span><strong>{field.canonicalName ?? "needs mapping"}</strong><small>{field.sample}</small></div>)}</div>
+    {report.matchState && <MatchStateView state={report.matchState} />}
     {report.warnings.map((warning) => <p className="report-warning" key={warning}><TriangleAlert size={14} /> {warning}</p>)}
+  </div>;
+}
+
+function MatchStateView({ state }: { state: NonNullable<DatasetReport["matchState"]> }) {
+  return <div className="match-state-report">
+    <div className="card-label"><span className="number-label">DERIVED MATCH STATE</span> FROM {state.eventCount} EVENTS</div>
+    <div className="state-metrics"><div><strong>{state.rhythmScore}</strong><span>rhythm</span></div><div><strong>{state.chaosScore}</strong><span>chaos</span></div><div><strong>{state.dominantControlTeamId ?? "—"}</strong><span>control edge</span></div><div><strong>{state.dominantDangerTeamId ?? "—"}</strong><span>danger edge</span></div></div>
+    <div className="team-state-list">{state.teams.map((team) => <div className="team-state" key={team.teamId}><div><strong>{team.teamId}</strong><span>{team.shots} shots · {team.expectedGoals.toFixed(2)} xG</span></div><div className="team-bars"><span>control <i style={{ width: `${Math.min(100, team.controlScore)}%` }} /></span><span>danger <b style={{ width: `${Math.min(100, team.dangerScore)}%` }} /></span></div><small>{team.possessionPct}% possession</small></div>)}</div>
   </div>;
 }

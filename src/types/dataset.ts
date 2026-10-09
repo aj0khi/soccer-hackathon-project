@@ -1,3 +1,5 @@
+import type { MatchStateSummary } from "@/types/match-state";
+
 export type DatasetFormat = "json" | "csv" | "ndjson" | "unknown";
 export type FieldStatus = "recognized" | "mapped" | "unavailable";
 
@@ -21,4 +23,5 @@ export interface DatasetReport {
   fields: DatasetField[];
   missingFields: string[];
   warnings: string[];
+  matchState?: MatchStateSummary;
 }
