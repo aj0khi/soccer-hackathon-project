@@ -15,9 +15,9 @@ import {
   UserRound,
   Zap,
 } from "lucide-react";
+import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
-import { renderPersonalizedInsight } from "@/lib/narrative/render-personalized-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
@@ -63,7 +63,8 @@ export default function Home() {
   const [view, setView] = useState<"studio" | "fan" | "player">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
-  const renderedInsight = leadInsight ? renderPersonalizedInsight(leadInsight, audienceProfiles[view]) : undefined;
+  const agentRun = runMatchIntelligenceAgents(generatedMatch.events, audienceProfiles[view]);
+  const renderedInsight = agentRun.renderedInsight;
 
   return (
     <main className="app-shell">
@@ -137,7 +138,7 @@ export default function Home() {
             <div className="fork-result"><Zap size={16} fill="currentColor" /><span>{selectedFork === "pass" ? "The higher-value path would have opened the central lane before Brighton could reset." : "The shot arrived under pressure. Brighton recovered shape in 1.8 seconds."}</span><b>MODELLED</b></div>
           </section>
 
-          <footer className="bottom-note"><span><span className="tiny-dot" /> Synthetic event stream healthy</span><span>Last interpretation 2.4s ago</span><span className="powered">Powered by <strong>Azure AI</strong> · Evidence locked</span></footer>
+          <footer className="bottom-note"><span><span className="tiny-dot" /> Synthetic event stream healthy</span><span>{agentRun.trace.length} agents handed off successfully</span><span className="powered">Powered by <strong>Azure AI</strong> · Evidence locked</span></footer>
         </div>
       </div>
       {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} />}

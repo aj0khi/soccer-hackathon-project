@@ -93,9 +93,18 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added the under-two-minute walkthrough in `docs/DEMO_SCRIPT.md`.
 - Lint and production build remain required checks before each checkpoint.
 
-## Current step: Azure deployment and agent orchestration
+### Agent orchestration
 
-The next layer should provision the cloud resources and connect Microsoft Foundry/Agent Framework behind the provider-neutral interfaces.
+- Added a shared-state local orchestrator with three purposeful handoffs:
+   - `match-state-agent` calculates the derived state.
+   - `evidence-agent` builds the grounded insight and evidence groups.
+   - `experience-agent` renders the selected audience profile.
+- Added a test that verifies the handoff order and personalized output.
+- The orchestrator is provider-neutral and ready to be mapped to Microsoft Foundry agents.
+
+## Current step: Azure deployment and Foundry mapping
+
+The next layer should provision cloud resources and map the local agent roles to Microsoft Foundry/Agent Framework while preserving the shared-state contracts.
 
 Completed implementation:
 
@@ -106,16 +115,19 @@ Completed implementation:
 - `src/lib/narrative/render-personalized-insight.ts`
 - `src/infrastructure/azure/config.ts`
 - `src/infrastructure/azure/event-hub-source.ts`
+- `src/application/agents/orchestrate-match-intelligence.ts`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
 Normalization, synthetic generator, aggregation, data-driven interface, narrative, personalization, and the Azure adapter definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, the optional Event Hubs adapter compiles behind the pipeline port, lint and build pass, and the intake report shows the resulting metrics.
 
 Testing and demo readiness definition of done: complete. `npm test` passes three pipeline checks, lint passes, build passes, and a judge-facing script exists under `docs/DEMO_SCRIPT.md`.
 
+Agent orchestration definition of done: local version complete. The three handoffs are tested and visible in the application; Foundry deployment and live Azure handoff verification remain pending.
+
 ## Remaining work
 
-1. **Azure deployment and agent orchestration**
-   - Provision event-driven Azure resources and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
+1. **Azure deployment and Foundry mapping**
+   - Provision event-driven Azure resources and connect the three local agent roles to Microsoft Foundry/Agent Framework.
 2. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 

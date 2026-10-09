@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
 import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
@@ -40,5 +41,24 @@ describe("match intelligence pipeline", () => {
     expect(insight).toBeDefined();
     expect(insight?.confidence).toBeGreaterThan(70);
     expect(insight?.evidence.some((item) => item.eventIds.length > 0)).toBe(true);
+  });
+
+  it("passes shared state through the three agent handoffs", () => {
+    const match = generateSyntheticMatch();
+    const run = runMatchIntelligenceAgents(match.events, {
+      profileId: "fan",
+      locale: "en",
+      detailLevel: "brief",
+      deliveryModes: ["screen"],
+      followedTeamIds: ["AST"],
+      followedPlayerIds: [],
+      interests: ["momentum"],
+    });
+    expect(run.trace.map((entry) => entry.agent)).toEqual([
+      "match-state-agent",
+      "evidence-agent",
+      "experience-agent",
+    ]);
+    expect(run.renderedInsight?.profileId).toBe("fan");
   });
 });
