@@ -115,6 +115,7 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added safe deployment parameters in `infra/main.parameters.example.json`.
 - Added deployment and identity instructions in `infra/README.md`.
 - Local Azure CLI validation and deployment remain pending because `az` is not installed in this workspace.
+- Added a student-plan setup and cleanup guide with the Basic tier as the default.
 
 ## Current step: live Azure provisioning
 

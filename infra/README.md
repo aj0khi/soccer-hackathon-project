@@ -2,6 +2,8 @@
 
 This folder provisions the event-ingestion foundation for Second Story. It creates an Azure Event Hubs namespace, the `match-events` hub, and a consumer group for the application.
 
+For the lowest-cost setup, follow [`STUDENT_SETUP.md`](STUDENT_SETUP.md). The template defaults to the Basic tier.
+
 The template uses synthetic-event tags and does not provision Foundry agents. Foundry project and agent creation depends on the Azure subscription, model deployment, region, and identity chosen by the team; those steps are documented in [`docs/FOUNDRY_MAPPING.md`](../docs/FOUNDRY_MAPPING.md).
 
 ## Prerequisites

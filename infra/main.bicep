@@ -18,7 +18,7 @@ param consumerGroupName string = '$Default'
   'Standard'
   'Premium'
 ])
-param skuName string = 'Standard'
+param skuName string = 'Basic'
 
 @description('Event Hubs namespace capacity units.')
 param skuCapacity int = 1
