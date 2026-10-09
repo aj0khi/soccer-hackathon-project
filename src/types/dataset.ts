@@ -14,6 +14,8 @@ export interface DatasetReport {
   format: DatasetFormat;
   rowCount: number;
   recognizedEvents: number;
+  normalizedEvents: number;
+  rejectedEvents: number;
   unsupportedEvents: number;
   readiness: number;
   fields: DatasetField[];

@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState } from "react";
 import { Check, FileJson, LoaderCircle, TriangleAlert, Upload, X } from "lucide-react";
+import { normalizeRows } from "@/lib/ingestion/normalize-events";
 import type { DatasetField, DatasetFormat, DatasetReport } from "@/types/dataset";
 
 interface DataIntakePanelProps {
@@ -70,6 +71,7 @@ function parseContent(content: string, fileName: string): { format: DatasetForma
 function profileDataset(content: string, fileName: string): DatasetReport {
   try {
     const { format, rows } = parseContent(content, fileName);
+    const normalization = normalizeRows(rows, "uploaded-match");
     const firstRow = rows[0] ?? {};
     const fields: DatasetField[] = Object.entries(firstRow).map(([sourceName, value]) => {
       const canonicalName = aliases[normalizeKey(sourceName)];
@@ -91,22 +93,24 @@ function profileDataset(content: string, fileName: string): DatasetReport {
       format,
       rowCount: rows.length,
       recognizedEvents,
+      normalizedEvents: normalization.events.length,
+      rejectedEvents: normalization.rejected.length,
       unsupportedEvents,
       readiness,
       fields,
       missingFields,
-      warnings: format === "unknown" ? ["This file is not JSON, CSV, or NDJSON."] : missingFields.length ? ["Some insights will remain unavailable until the missing fields are mapped."] : [],
+      warnings: [...(format === "unknown" ? ["This file is not JSON, CSV, or NDJSON."] : missingFields.length ? ["Some insights will remain unavailable until the missing fields are mapped."] : []), ...normalization.rejected.slice(0, 3).map((item) => `Row ${item.rowIndex}: ${item.reason}.`)],
     };
   } catch {
-    return { fileName, format: "unknown", rowCount: 0, recognizedEvents: 0, unsupportedEvents: 0, readiness: 0, fields: [], missingFields: ["eventType", "teamId"], warnings: ["The file could not be parsed. Check its format and try again."] };
+    return { fileName, format: "unknown", rowCount: 0, recognizedEvents: 0, normalizedEvents: 0, rejectedEvents: 0, unsupportedEvents: 0, readiness: 0, fields: [], missingFields: ["eventType", "teamId"], warnings: ["The file could not be parsed. Check its format and try again."] };
   }
 }
 
 const sampleData = JSON.stringify([
-  { timestamp: 3488000, event: "pressure", team: "BRI", player: "P-12", intensity: 0.82 },
-  { timestamp: 3491000, event: "possession_change", team: "BRI", player: "P-12", x: 68, y: 42 },
-  { timestamp: 3495000, event: "pass", team: "BRI", player: "P-12", completed: true },
-  { timestamp: 3502000, event: "shot", team: "BRI", player: "P-09", shotSpeedKph: 94 },
+  { timestamp: 3488000, event: "pressure", team: "BRI", player: "P-12", x: 68, y: 42, intensity: 0.82, durationSeconds: 2.4 },
+  { timestamp: 3491000, event: "possession_change", team: "BRI", player: "P-12", previousTeamId: "AST", nextTeamId: "BRI", x: 68, y: 42 },
+  { timestamp: 3495000, event: "pass", team: "BRI", player: "P-12", startX: 68, startY: 42, endX: 78, endY: 48, distanceMeters: 14.2, completed: true, pressureCount: 2 },
+  { timestamp: 3502000, event: "shot", team: "BRI", player: "P-09", x: 83, y: 47, expectedGoals: 0.18, shotSpeedKph: 94, outcome: "saved" },
   { timestamp: 3509000, event: "goal", team: "BRI", player: "P-09" },
 ], null, 2);
 
@@ -148,7 +152,7 @@ export function DataIntakePanel({ onClose }: DataIntakePanelProps) {
 function ReportView({ report }: { report: DatasetReport }) {
   return <div className="dataset-report">
     <div className="report-heading"><div><span className="card-label">DATASET PROFILE</span><h3>{report.fileName}</h3></div><div className="readiness"><strong>{report.readiness}%</strong><span>insight readiness</span></div></div>
-    <div className="report-stats"><div><strong>{report.rowCount}</strong><span>rows read</span></div><div><strong className="good">{report.recognizedEvents}</strong><span>events recognized</span></div><div><strong className={report.unsupportedEvents ? "warn" : "good"}>{report.unsupportedEvents}</strong><span>held back</span></div></div>
+    <div className="report-stats"><div><strong>{report.rowCount}</strong><span>rows read</span></div><div><strong className="good">{report.normalizedEvents}</strong><span>canonical events</span></div><div><strong className={report.rejectedEvents ? "warn" : "good"}>{report.rejectedEvents}</strong><span>rejected with reason</span></div></div>
     <div className="field-list">{report.fields.slice(0, 6).map((field) => <div className="field-row" key={field.sourceName}><span className={field.status === "unavailable" ? "field-status missing" : "field-status"}>{field.status === "unavailable" ? <TriangleAlert size={12} /> : <Check size={12} />}</span><span className="field-source">{field.sourceName}</span><span className="field-arrow">→</span><strong>{field.canonicalName ?? "needs mapping"}</strong><small>{field.sample}</small></div>)}</div>
     {report.warnings.map((warning) => <p className="report-warning" key={warning}><TriangleAlert size={14} /> {warning}</p>)}
   </div>;
