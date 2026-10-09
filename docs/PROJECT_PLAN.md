@@ -86,9 +86,16 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Local synthetic data remains the fallback when Azure environment variables are absent.
 - Azure resource provisioning and live end-to-end verification are still pending.
 
-## Current step: testing and demo readiness
+### Testing and demo readiness
 
-The next layer should make the pipeline repeatable, test malformed and partial data, and prepare a short judge-facing demo.
+- Added Vitest with `npm test`.
+- Added pipeline tests for alias normalization, rejection reasons, match-state aggregation, deterministic simulation, and narrative evidence.
+- Added the under-two-minute walkthrough in `docs/DEMO_SCRIPT.md`.
+- Lint and production build remain required checks before each checkpoint.
+
+## Current step: Azure deployment and agent orchestration
+
+The next layer should provision the cloud resources and connect Microsoft Foundry/Agent Framework behind the provider-neutral interfaces.
 
 Completed implementation:
 
@@ -103,13 +110,13 @@ Completed implementation:
 
 Normalization, synthetic generator, aggregation, data-driven interface, narrative, personalization, and the Azure adapter definition of done: complete. Uploaded rows produce typed canonical events, invalid rows are reported, the scenario is repeatable, derived match state is calculated, the primary interface consumes that state, the narrative carries evidence IDs and confidence, audience modes render different detail levels, the optional Event Hubs adapter compiles behind the pipeline port, lint and build pass, and the intake report shows the resulting metrics.
 
+Testing and demo readiness definition of done: complete. `npm test` passes three pipeline checks, lint passes, build passes, and a judge-facing script exists under `docs/DEMO_SCRIPT.md`.
+
 ## Remaining work
 
-1. **Testing and demo readiness**
-   - Add parser tests, malformed-data tests, a repeatable demo scenario, deployment instructions, and a two-minute demo script.
-2. **Azure deployment and agent orchestration**
+1. **Azure deployment and agent orchestration**
    - Provision event-driven Azure resources and connect Microsoft Foundry/Agent Framework behind the existing interfaces.
-3. **Submission package**
+2. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
 ## Guardrails
