@@ -16,6 +16,7 @@ import {
   Sparkles,
   UserRound,
   Zap,
+  X,
 } from "lucide-react";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
@@ -65,6 +66,7 @@ export default function Home() {
   const [view, setView] = useState<"studio" | "fan" | "player">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
   const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
@@ -139,7 +141,7 @@ export default function Home() {
               <div className="card-label evidence-label"><span className="number-label">02</span> THE EVIDENCE MATCH <span className="signal-badge">DATA SAYS</span></div>
               <h3>Brighton are<br /><span>{matchState.dominantDangerTeamId === "BRI" ? "setting the trap." : "reading the game."}</span></h3>
               <ul className="evidence-list">{evidence.map((item) => <li key={item}><span className="check-mark">+</span><span>{item}</span></li>)}</ul>
-              <button className="text-action">Open evidence trail <ArrowUpRight size={14} /></button>
+              <button className="text-action" onClick={() => setEvidenceOpen(true)}>Open evidence trail <ArrowUpRight size={14} /></button>
             </section>
           </div>
 
@@ -158,6 +160,16 @@ export default function Home() {
         </div>
       </div>
       {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} onDataReady={(events) => { if (events.length > 0) setActiveEvents(events); }} />}
+      {evidenceOpen && leadInsight && <div className="evidence-overlay" role="dialog" aria-modal="true" aria-labelledby="evidence-title">
+        <div className="evidence-backdrop" onClick={() => setEvidenceOpen(false)} />
+        <section className="evidence-panel">
+          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> TRACEABLE EXPLANATION</span><h2 id="evidence-title">Why this matters.</h2></div><button className="icon-button" onClick={() => setEvidenceOpen(false)} aria-label="Close evidence trail"><X size={18} /></button></header>
+          <p className="evidence-explanation">{leadInsight.explanation}</p>
+          <div className="evidence-confidence"><span>INSIGHT CONFIDENCE</span><strong>{leadInsight.confidence}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight.confidence}%` }} /></div></div>
+          <div className="evidence-trail-list">{leadInsight.evidence.map((item) => <article key={item.metric}><div className="trail-heading"><strong>{item.metric}</strong><span>{item.comparison}</span></div><div className="trail-value">{item.value}{item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}</div><div className="trail-events"><span>EVENT IDS</span>{item.eventIds.length ? item.eventIds.map((eventId) => <code key={eventId}>{eventId}</code>) : <small>No matching events</small>}</div></article>)}</div>
+          <footer className="evidence-panel-footer"><span>Claims without evidence are not rendered.</span><span>{leadInsight.tags.join(" · ")}</span></footer>
+        </section>
+      </div>}
     </main>
   );
 }

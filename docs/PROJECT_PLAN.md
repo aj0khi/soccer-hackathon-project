@@ -127,6 +127,12 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added language controls to the main match experience.
 - Kept deterministic local rendering as the fallback until Foundry or Translator is connected.
 
+### Explainability surface
+
+- Added an interactive evidence drawer from the main narrative card.
+- Shows each claim's metric, comparison, value, supporting event IDs, confidence, explanation, and tags.
+- Makes unsupported claims visibly impossible in the primary demo flow.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.
@@ -144,6 +150,7 @@ Completed implementation:
 - `src/infrastructure/azure/foundry-config.ts`
 - `src/lib/narrative/build-match-recap.ts`
 - `src/lib/narrative/render-localized-insight.ts`
+- Interactive evidence trail in `src/app/page.tsx`.
 - `infra/main.bicep`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
@@ -158,6 +165,8 @@ Foundry mapping definition of done: complete. Role IDs, endpoint configuration, 
 Infrastructure definition of done: template complete. Event Hubs resources, example parameters, local secret protection, and deployment instructions are present; Azure CLI deployment remains pending.
 
 Recap and multilingual definition of done: local version complete. Full-match sections carry evidence event IDs, language controls render English/Spanish/French variants, tests/lint/build pass, and cloud-backed translation remains optional.
+
+Explainability definition of done: complete. Judges can open the evidence trail from the main story and inspect the event-linked support for every displayed claim.
 
 ## Remaining work
 
