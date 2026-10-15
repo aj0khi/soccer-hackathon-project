@@ -133,6 +133,12 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Shows each claim's metric, comparison, value, supporting event IDs, confidence, explanation, and tags.
 - Makes unsupported claims visibly impossible in the primary demo flow.
 
+### Browser QA
+
+- Verified all application-owned buttons and interaction paths against the local dev server.
+- Added the repeatable checklist in `docs/QA_CHECKLIST.md`.
+- The only excluded control is the framework-injected Next.js development-tools button.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.

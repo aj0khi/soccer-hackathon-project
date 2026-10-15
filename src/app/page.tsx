@@ -67,6 +67,7 @@ export default function Home() {
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [utilityPanel, setUtilityPanel] = useState<"settings" | "guide" | null>(null);
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
   const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
@@ -77,6 +78,8 @@ export default function Home() {
   const recap = leadInsight ? buildMatchRecap(activeEvents, matchState, leadInsight) : undefined;
   const localizedInsight = leadInsight ? renderLocalizedInsight(leadInsight, locale) : undefined;
   const evidence = leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? [];
+  const scrollToSection = (selector: string) => document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const cycleView = () => setView(view === "studio" ? "fan" : view === "fan" ? "player" : "studio");
 
   return (
     <main className="app-shell">
@@ -90,8 +93,8 @@ export default function Home() {
         </div>
         <div className="match-status"><span className="live-dot" /> LIVE <span className="status-divider" /> 2ND HALF <span className="clock">{lastMinute}:00</span></div>
         <div className="top-actions">
-          <button className="icon-button" aria-label="Open settings"><Settings2 size={17} /></button>
-          <button className="profile-button"><UserRound size={16} /> {view === "player" ? "Player focus" : view === "fan" ? "Fan lens" : "Studio view"} <ChevronDown size={15} /></button>
+            <button className="icon-button" aria-label="Open settings" onClick={() => setUtilityPanel("settings")}><Settings2 size={17} /></button>
+            <button className="profile-button" onClick={cycleView}><UserRound size={16} /> {view === "player" ? "Player focus" : view === "fan" ? "Fan lens" : "Studio view"} <ChevronDown size={15} /></button>
         </div>
       </header>
 
@@ -103,12 +106,12 @@ export default function Home() {
 
       <div className="workspace">
         <aside className="rail">
-          <button className="rail-button active" aria-label="Match intelligence"><LayoutDashboard size={19} /><span>Match</span></button>
+          <button className="rail-button active" aria-label="Match intelligence" onClick={() => scrollToSection(".hero-story")}><LayoutDashboard size={19} /><span>Match</span></button>
           <button className="rail-button" aria-label="Open data intake" onClick={() => setIntakeOpen(true)}><Database size={19} /><span>Data</span></button>
-          <button className="rail-button" aria-label="Live signals"><Activity size={19} /><span>Signals</span></button>
-          <button className="rail-button" aria-label="Broadcast mode"><Radio size={19} /><span>On air</span></button>
+          <button className="rail-button" aria-label="Live signals" onClick={() => scrollToSection(".timeline-card")}><Activity size={19} /><span>Signals</span></button>
+          <button className="rail-button" aria-label="Broadcast mode" onClick={() => scrollToSection(".hero-story")}><Radio size={19} /><span>On air</span></button>
           <div className="rail-spacer" />
-          <button className="rail-button" aria-label="Help"><CircleHelp size={19} /><span>Guide</span></button>
+            <button className="rail-button" aria-label="Help" onClick={() => setUtilityPanel("guide")}><CircleHelp size={19} /><span>Guide</span></button>
         </aside>
 
         <div className="content-area">
@@ -168,6 +171,13 @@ export default function Home() {
           <div className="evidence-confidence"><span>INSIGHT CONFIDENCE</span><strong>{leadInsight.confidence}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight.confidence}%` }} /></div></div>
           <div className="evidence-trail-list">{leadInsight.evidence.map((item) => <article key={item.metric}><div className="trail-heading"><strong>{item.metric}</strong><span>{item.comparison}</span></div><div className="trail-value">{item.value}{item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}</div><div className="trail-events"><span>EVENT IDS</span>{item.eventIds.length ? item.eventIds.map((eventId) => <code key={eventId}>{eventId}</code>) : <small>No matching events</small>}</div></article>)}</div>
           <footer className="evidence-panel-footer"><span>Claims without evidence are not rendered.</span><span>{leadInsight.tags.join(" · ")}</span></footer>
+        </section>
+      </div>}
+      {utilityPanel && <div className="utility-overlay" role="dialog" aria-modal="true" aria-labelledby="utility-title">
+        <div className="evidence-backdrop" onClick={() => setUtilityPanel(null)} />
+        <section className="utility-panel">
+          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> {utilityPanel === "settings" ? "WORKSPACE SETTINGS" : "SECOND STORY GUIDE"}</span><h2 id="utility-title">{utilityPanel === "settings" ? "Tune the lens." : "Read the match differently."}</h2></div><button className="icon-button" onClick={() => setUtilityPanel(null)} aria-label="Close panel"><X size={18} /></button></header>
+          {utilityPanel === "settings" ? <div className="utility-options"><div><strong>Active audience</strong><span>{view === "player" ? "Player Focus" : view === "fan" ? "Fan Lens" : "Studio"}</span></div><div><strong>Evidence policy</strong><span>Event-linked claims only</span></div><div><strong>Input source</strong><span>{activeEvents.length} normalized synthetic events</span></div><button className="utility-action" onClick={() => { setView("studio"); setUtilityPanel(null); }}>Reset to studio view <ArrowUpRight size={14} /></button></div> : <div className="utility-options"><div><strong>1. Bring data</strong><span>Use Data to inspect a file or run the momentum scenario.</span></div><div><strong>2. Find the second story</strong><span>Compare the perceived match with evidence-backed danger.</span></div><div><strong>3. Change the audience</strong><span>Switch Studio, Fan Lens, or Player Focus without changing the facts.</span></div><div><strong>4. Audit the claim</strong><span>Open the evidence trail to inspect supporting event IDs.</span></div></div>}
         </section>
       </div>}
     </main>
