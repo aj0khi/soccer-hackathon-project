@@ -18,6 +18,10 @@ Say: "This is a repeatable synthetic event stream. It contains passes, pressure,
 
 Show the dataset profile and canonical event count.
 
+Click **Replay live** in the header and let the event count begin moving.
+
+Say: "The same feed can be replayed event by event, so the interpretation grows as the match unfolds rather than appearing as a static answer."
+
 ## 0:25-0:40 — Make the data meaningful
 
 Point to the derived match state.

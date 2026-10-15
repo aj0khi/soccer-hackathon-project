@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   ArrowUpRight,
@@ -11,6 +11,8 @@ import {
   GitBranch,
   LayoutDashboard,
   Languages,
+  Pause,
+  Play,
   Radio,
   Settings2,
   Sparkles,
@@ -79,6 +81,19 @@ export default function Home() {
   const [utilityPanel, setUtilityPanel] = useState<"settings" | "guide" | null>(null);
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
+  const [playbackSource, setPlaybackSource] = useState<MatchEvent[]>(generatedMatch.events);
+  const [playbackIndex, setPlaybackIndex] = useState(generatedMatch.events.length);
+  const [isPlaying, setIsPlaying] = useState(false);
+  useEffect(() => {
+    if (!isPlaying || playbackIndex >= playbackSource.length) return;
+    const timer = window.setTimeout(() => {
+      const nextIndex = playbackIndex + 1;
+      setPlaybackIndex(nextIndex);
+      setActiveEvents(playbackSource.slice(0, nextIndex));
+      if (nextIndex >= playbackSource.length) setIsPlaying(false);
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [isPlaying, playbackIndex, playbackSource]);
   const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
   const profiles = useMemo(() => createAudienceProfiles(activeEvents), [activeEvents]);
   const { matchState, homeTeam, awayTeam, homeTeamLabel, awayTeamLabel, goalCount, lastMinute, timeline } = model;
@@ -92,6 +107,17 @@ export default function Home() {
   const liveSignals = activeEvents.slice(-6).reverse();
   const scrollToSection = (selector: string) => document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cycleView = () => setView(view === "studio" ? "fan" : view === "fan" ? "player" : "studio");
+  const toggleReplay = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+      return;
+    }
+    const source = playbackSource.length ? playbackSource : generatedMatch.events;
+    setPlaybackSource(source);
+    setPlaybackIndex(0);
+    setActiveEvents([]);
+    setIsPlaying(true);
+  };
 
   return (
     <main className="app-shell">
@@ -103,9 +129,10 @@ export default function Home() {
             <p className="brand-subtitle">Match intelligence, beyond the score</p>
           </div>
         </div>
-        <div className="match-status"><span className="live-dot" /> LIVE <span className="status-divider" /> 2ND HALF <span className="clock">{lastMinute}:00</span></div>
+        <div className="match-status"><span className="live-dot" /> {isPlaying ? "LIVE REPLAY" : "LIVE"} <span className="status-divider" /> 2ND HALF <span className="clock">{lastMinute}:00</span></div>
         <div className="top-actions">
             <button className="icon-button" aria-label="Open settings" onClick={() => setUtilityPanel("settings")}><Settings2 size={17} /></button>
+          <button className="replay-button" onClick={toggleReplay}>{isPlaying ? <Pause size={14} /> : <Play size={14} />} <span>{isPlaying ? "Pause feed" : "Replay live"}</span></button>
             <button className="profile-button" onClick={cycleView}><UserRound size={16} /> {view === "player" ? "Player focus" : view === "fan" ? "Fan lens" : "Studio view"} <ChevronDown size={15} /></button>
         </div>
       </header>
@@ -186,7 +213,7 @@ export default function Home() {
           <footer className="bottom-note"><span><span className="tiny-dot" /> Synthetic event stream healthy</span><span>{agentRun.trace.length} agents handed off successfully</span><span className="powered">Powered by <strong>Azure AI</strong> · Evidence locked</span></footer>
         </div>
       </div>
-      {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} onDataReady={(events) => { if (events.length > 0) setActiveEvents(events); }} />}
+      {intakeOpen && <DataIntakePanel onClose={() => setIntakeOpen(false)} onDataReady={(events) => { if (events.length > 0) { setPlaybackSource(events); setPlaybackIndex(events.length); setActiveEvents(events); setIsPlaying(false); } }} />}
       {evidenceOpen && leadInsight && <div className="evidence-overlay" role="dialog" aria-modal="true" aria-labelledby="evidence-title">
         <div className="evidence-backdrop" onClick={() => setEvidenceOpen(false)} />
         <section className="evidence-panel">

@@ -168,6 +168,12 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added autofocus to temporary panels for a predictable keyboard flow.
 - Recorded the applied hierarchy, motion, accessibility, and responsive criteria in `docs/DESIGN_PRINCIPLES.md`.
 
+### Live replay
+
+- Added progressive event playback from the active synthetic or uploaded feed.
+- Replay updates the event count, ticker, match state, narrative, probabilities, and agent handoff surface over time.
+- Added pause/resume behavior and browser verification for the replay control.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.
