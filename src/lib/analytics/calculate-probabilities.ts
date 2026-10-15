@@ -24,8 +24,10 @@ function outcomeLabel(outcome: MatchOutcome, homeTeamId: string, awayTeamId: str
 }
 
 export function calculateMatchProbabilities(events: MatchEvent[], state: MatchStateSummary): ProbabilitySummary | undefined {
-  const homeTeamId = "AST";
-  const awayTeamId = "BRI";
+  const [homeTeam, awayTeam] = state.teams;
+  const homeTeamId = homeTeam?.teamId;
+  const awayTeamId = awayTeam?.teamId;
+  if (!homeTeamId || !awayTeamId) return undefined;
   const homeState = state.teams.find((team) => team.teamId === homeTeamId);
   const awayState = state.teams.find((team) => team.teamId === awayTeamId);
   if (!homeState || !awayState) return undefined;

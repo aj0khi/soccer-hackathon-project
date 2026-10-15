@@ -1,10 +1,7 @@
 import type { MatchEvent } from "@/types/match";
 import type { MatchInsight } from "@/types/insight";
 import type { MatchStateSummary } from "@/types/match-state";
-
-function teamLabel(teamId: string) {
-  return teamId === "AST" ? "Aston" : teamId === "BRI" ? "Brighton" : teamId;
-}
+import { formatTeamLabel } from "@/lib/football/team-label";
 
 function supportingEvents(events: MatchEvent[], teamId: string) {
   return events
@@ -26,8 +23,8 @@ export function buildMatchInsight(events: MatchEvent[], state: MatchStateSummary
   const evidenceIds = [...supportingEvents(events, controlTeam.teamId), ...supportingEvents(events, dangerTeam.teamId)];
   const uniqueEvidenceIds = [...new Set(evidenceIds)];
   const confidence = Math.min(98, Math.round(72 + Math.min(20, uniqueEvidenceIds.length * 2) + (mismatch ? 5 : 0)));
-  const controlName = teamLabel(controlTeam.teamId);
-  const dangerName = teamLabel(dangerTeam.teamId);
+  const controlName = formatTeamLabel(controlTeam.teamId);
+  const dangerName = formatTeamLabel(dangerTeam.teamId);
 
   return {
     insightId: `${state.eventCount}-${state.dominantControlTeamId}-${state.dominantDangerTeamId}`,

@@ -155,6 +155,13 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Clearly labels the output as a synthetic model rather than bookmaker or real Premier League data.
 - Documented formulas and limitations in `docs/MODEL_NOTES.md`.
 
+### Audit and hardening
+
+- Generalized the active dashboard for uploaded team IDs and player IDs.
+- Hardened quoted CSV parsing and Azure event-specific validation.
+- Added regression tests for both audit findings.
+- Recorded fixed issues, remaining risks, and submission blockers in `docs/AUDIT.md`.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.

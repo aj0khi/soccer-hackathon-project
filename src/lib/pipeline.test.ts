@@ -3,7 +3,9 @@ import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { calculateMatchProbabilities } from "@/lib/analytics/calculate-probabilities";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { getFoundryProjectConfig, isFoundryReady } from "@/infrastructure/azure/foundry-config";
+import { isCanonicalMatchEvent } from "@/infrastructure/azure/event-hub-source";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
+import { parseCsv } from "@/lib/ingestion/parse-content";
 import { buildMatchInsight } from "@/lib/narrative/build-match-insight";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 
@@ -14,6 +16,18 @@ const validRows = [
 ];
 
 describe("match intelligence pipeline", () => {
+  it("keeps quoted commas intact when parsing CSV input", () => {
+    const rows = parseCsv('event,team,player\npass,"North, East",P-01');
+    expect(rows[0]).toEqual({ event: "pass", team: "North, East", player: "P-01" });
+  });
+
+  it("rejects incomplete cloud event payloads by event type", () => {
+    const validPressure = { eventId: "e-1", matchId: "m-1", timestampMs: 1000, minute: 0, teamId: "TEAM-A", eventType: "pressure", location: { x: 40, y: 50 }, intensity: 0.8, durationSeconds: 2 };
+    const invalidPressure = { ...validPressure, location: undefined };
+    expect(isCanonicalMatchEvent(validPressure)).toBe(true);
+    expect(isCanonicalMatchEvent(invalidPressure)).toBe(false);
+  });
+
   it("normalizes aliases and reports incomplete rows", () => {
     const result = normalizeRows([...validRows, { timestamp: 90000, event: "shot", team: "AST" }], "test-match");
     expect(result.events).toHaveLength(3);

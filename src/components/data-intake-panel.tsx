@@ -4,6 +4,7 @@ import { ChangeEvent, useState } from "react";
 import { Check, FileJson, LoaderCircle, Play, TriangleAlert, Upload, WandSparkles, X } from "lucide-react";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
+import { parseContent } from "@/lib/ingestion/parse-content";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import type { DatasetField, DatasetFormat, DatasetReport } from "@/types/dataset";
 import type { MatchEvent } from "@/types/match";
@@ -12,8 +13,6 @@ interface DataIntakePanelProps {
   onClose: () => void;
   onDataReady?: (events: MatchEvent[], report: DatasetReport) => void;
 }
-
-type DataRow = Record<string, unknown>;
 
 const supportedEvents = new Set([
   "pass",
@@ -45,31 +44,6 @@ const aliases: Record<string, string> = {
 
 function normalizeKey(value: string) {
   return value.toLowerCase().replace(/[\s-]/g, "_");
-}
-
-function parseCsv(content: string) {
-  const lines = content.split(/\r?\n/).filter(Boolean);
-  if (lines.length < 2) return [] as DataRow[];
-  const headers = lines[0].split(",").map((header) => header.trim().replace(/^"|"$/g, ""));
-  return lines.slice(1).map((line) => {
-    const values = line.split(",");
-    return Object.fromEntries(headers.map((header, index) => [header, values[index]?.trim() ?? ""]));
-  });
-}
-
-function parseContent(content: string, fileName: string): { format: DatasetFormat; rows: DataRow[] } {
-  const extension = fileName.split(".").pop()?.toLowerCase();
-  if (extension === "csv") return { format: "csv" as DatasetFormat, rows: parseCsv(content) };
-  if (extension === "ndjson" || extension === "jsonl") {
-    return { format: "ndjson" as DatasetFormat, rows: content.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)) };
-  }
-  try {
-    const value = JSON.parse(content);
-    const rows = Array.isArray(value) ? value : value.events ?? [value];
-    return { format: "json" as DatasetFormat, rows: rows as DataRow[] };
-  } catch {
-    return { format: "unknown" as DatasetFormat, rows: [] };
-  }
 }
 
 function profileDataset(content: string, fileName: string): DatasetReport {

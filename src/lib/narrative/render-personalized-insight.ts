@@ -8,7 +8,7 @@ export function renderPersonalizedInsight(insight: MatchInsight, profile: Experi
   let text = insight.summary;
 
   if (profile.profileId === "fan") {
-    text = `Aston have more of the ball, but Brighton are creating the bigger danger. Watch the next Brighton attack: the match has become open and quick.`;
+    text = insight.summary;
   }
 
   if (profile.profileId === "player") {

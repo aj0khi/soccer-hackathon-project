@@ -21,6 +21,7 @@ import {
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
 import { calculateMatchProbabilities } from "@/lib/analytics/calculate-probabilities";
+import { formatTeamLabel } from "@/lib/football/team-label";
 import { buildMatchRecap } from "@/lib/narrative/build-match-recap";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import { renderLocalizedInsight, type SupportedLocale } from "@/lib/narrative/render-localized-insight";
@@ -28,11 +29,16 @@ import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
 
 const generatedMatch = generateSyntheticMatch();
-const audienceProfiles = {
-  studio: { profileId: "studio", locale: "en", detailLevel: "deep" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST", "BRI"], followedPlayerIds: [], interests: ["tactics", "evidence"] },
-  fan: { profileId: "fan", locale: "en", detailLevel: "brief" as const, deliveryModes: ["screen" as const], followedTeamIds: ["AST"], followedPlayerIds: [], interests: ["momentum", "goals"] },
-  player: { profileId: "player", locale: "en", detailLevel: "standard" as const, deliveryModes: ["screen" as const], followedTeamIds: ["BRI"], followedPlayerIds: ["BRI-P-09"], interests: ["player impact", "transitions"] },
-};
+
+function createAudienceProfiles(events: MatchEvent[]) {
+  const teamIds = [...new Set(events.map((event) => event.teamId))];
+  const playerId = events.find((event) => event.playerId)?.playerId;
+  return {
+    studio: { profileId: "studio", locale: "en", detailLevel: "deep" as const, deliveryModes: ["screen" as const], followedTeamIds: teamIds, followedPlayerIds: [], interests: ["tactics", "evidence"] },
+    fan: { profileId: "fan", locale: "en", detailLevel: "brief" as const, deliveryModes: ["screen" as const], followedTeamIds: teamIds.slice(0, 1), followedPlayerIds: [], interests: ["momentum", "goals"] },
+    player: { profileId: "player", locale: "en", detailLevel: "standard" as const, deliveryModes: ["screen" as const], followedTeamIds: teamIds.slice(0, 1), followedPlayerIds: playerId ? [playerId] : [], interests: ["player impact", "transitions"] },
+  };
+}
 
 function formatEventLabel(event: MatchEvent) {
   if (event.eventType === "possession_change") return "Possession regain";
@@ -45,18 +51,20 @@ function formatEventLabel(event: MatchEvent) {
 
 function createDashboardModel(events: MatchEvent[]) {
   const matchState = aggregateMatchState(events);
-  const teamState = (teamId: string) => matchState.teams.find((team) => team.teamId === teamId);
+  const [homeTeam, awayTeam] = matchState.teams;
   const timeline = events.filter((event) => event.minute >= 48 && ["possession_change", "pressure", "shot", "goal"].includes(event.eventType)).slice(0, 5).map((event, index) => ({
     time: `${String(event.minute).padStart(2, "0")}:${String((index * 17 + 10) % 60).padStart(2, "0")}`,
     label: formatEventLabel(event),
-    detail: event.eventType === "pressure" ? `${Math.round(event.intensity * 100)}% intensity` : event.eventType === "shot" ? `${event.expectedGoals.toFixed(2)} xG` : event.teamId === "BRI" ? "Brighton signal" : "Aston response",
+    detail: event.eventType === "pressure" ? `${Math.round(event.intensity * 100)}% intensity` : event.eventType === "shot" ? `${event.expectedGoals.toFixed(2)} xG` : `${formatTeamLabel(event.teamId)} signal`,
     tone: event.eventType === "goal" || event.eventType === "shot" ? "coral" : event.eventType === "pressure" ? "gold" : "lime",
     active: index === 2,
   }));
   return {
     matchState,
-    astonState: teamState("AST"),
-    brightonState: teamState("BRI"),
+    homeTeam,
+    awayTeam,
+    homeTeamLabel: formatTeamLabel(homeTeam?.teamId),
+    awayTeamLabel: formatTeamLabel(awayTeam?.teamId),
     goalCount: (teamId: string) => events.filter((event) => event.eventType === "goal" && event.teamId === teamId).length,
     lastMinute: events.length ? Math.max(...events.map((event) => event.minute)) : 0,
     timeline,
@@ -72,8 +80,9 @@ export default function Home() {
   const [locale, setLocale] = useState<SupportedLocale>("en");
   const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
   const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
-  const { matchState, astonState, brightonState, goalCount, lastMinute, timeline } = model;
-  const agentRun = runMatchIntelligenceAgents(activeEvents, audienceProfiles[view]);
+  const profiles = useMemo(() => createAudienceProfiles(activeEvents), [activeEvents]);
+  const { matchState, homeTeam, awayTeam, homeTeamLabel, awayTeamLabel, goalCount, lastMinute, timeline } = model;
+  const agentRun = runMatchIntelligenceAgents(activeEvents, profiles[view]);
   const leadInsight = agentRun.insight;
   const renderedInsight = agentRun.renderedInsight;
   const recap = leadInsight ? buildMatchRecap(activeEvents, matchState, leadInsight) : undefined;
@@ -102,7 +111,7 @@ export default function Home() {
 
       <section className="match-strip">
         <div className="competition"><span className="competition-kicker">SYNTHETIC MATCH / PREMIER LEAGUE MODEL</span><strong>Riverside Stadium</strong></div>
-        <div className="scoreline"><span>AST</span><b>{goalCount("AST")}</b><em>—</em><b className="away-score">{goalCount("BRI")}</b><span>BRI</span></div>
+        <div className="scoreline"><span>{homeTeamLabel}</span><b>{goalCount(homeTeam?.teamId ?? "")}</b><em>—</em><b className="away-score">{goalCount(awayTeam?.teamId ?? "")}</b><span>{awayTeamLabel}</span></div>
         <div className="match-meta"><span>{lastMinute}:00</span><small>{matchState.eventCount} events interpreted</small></div>
       </section>
 
@@ -123,9 +132,9 @@ export default function Home() {
           </div>
 
           <section className="story-card hero-story">
-            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> {view === "studio" ? "EVIDENCE-BACKED READ" : view === "fan" ? "FAN LENS / PLAIN LANGUAGE" : "PLAYER FOCUS / BRIGHTON-P-09"}</span><h2>{leadInsight?.title ?? "The match is still being interpreted."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{leadInsight?.confidence ?? 0}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight?.confidence ?? 0}%` }} /></div></div></div>
+            <div className="story-card-header"><div><span className="live-label"><span className="tiny-dot" /> {view === "studio" ? "EVIDENCE-BACKED READ" : view === "fan" ? "FAN LENS / PLAIN LANGUAGE" : `PLAYER FOCUS / ${profiles.player.followedPlayerIds[0] ?? "SELECTED PLAYER"}`}</span><h2>{leadInsight?.title ?? "The match is still being interpreted."}</h2></div><div className="confidence"><span>CONFIDENCE</span><strong>{leadInsight?.confidence ?? 0}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight?.confidence ?? 0}%` }} /></div></div></div>
             <p className="hero-copy">{renderedInsight?.text ?? "There is not enough validated event data to make this read."}</p>
-            <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {leadInsight?.evidence.reduce((total, item) => total + item.eventIds.length, 0) ?? 0} supporting events <ArrowUpRight size={14} /></div></div>
+            <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{awayTeam?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>{awayTeamLabel} xG</span></div><div className="proof-source"><GitBranch size={15} /> {leadInsight?.evidence.reduce((total, item) => total + item.eventIds.length, 0) ?? 0} supporting events <ArrowUpRight size={14} /></div></div>
           </section>
 
           {recap && <section className="story-card recap-card">
@@ -136,7 +145,7 @@ export default function Home() {
 
           {probability && <section className="story-card probability-card">
             <div className="probability-header"><div><div className="card-label"><span className="number-label">06</span> PROBABILITY LAB</div><h3>What does the match math say?</h3></div><span className="signal-badge">SYNTHETIC MODEL / NO MARKET FEED</span></div>
-            <div className="probability-summary"><div><strong>{probability.projectedHomeGoals.toFixed(2)}</strong><span>projected AST goals</span></div><div><strong>{probability.projectedAwayGoals.toFixed(2)}</strong><span>projected BRI goals</span></div><div><strong>{probability.mostLikelyScore}</strong><span>most likely finish</span></div><div><strong>{probability.remainingMinutes}&apos;</strong><span>minutes modelled</span></div></div>
+            <div className="probability-summary"><div><strong>{probability.projectedHomeGoals.toFixed(2)}</strong><span>projected {homeTeamLabel} goals</span></div><div><strong>{probability.projectedAwayGoals.toFixed(2)}</strong><span>projected {awayTeamLabel} goals</span></div><div><strong>{probability.mostLikelyScore}</strong><span>most likely finish</span></div><div><strong>{probability.remainingMinutes}&apos;</strong><span>minutes modelled</span></div></div>
             <div className="probability-body"><div className="poisson-note"><span className="live-label"><span className="tiny-dot" /> POISSON SCORE MODEL</span><p><code>P(k) = e<sup>-λ</sup> λ<sup>k</sup> / k!</code></p><small>Remaining-goal probability is estimated from validated xG, current score, and time left. Fair odds are the reciprocal of model probability, not a recommendation.</small></div><div className="outcome-list">{probability.outcomes.map((outcome) => <div className="outcome-row" key={outcome.outcome}><div><strong>{outcome.label}</strong><span>{outcome.fairOdds.toFixed(2)} fair odds</span></div><div className="outcome-bar"><i style={{ width: `${outcome.probability}%` }} /></div><b>{outcome.probability}%</b></div>)}</div></div>
             <div className="probability-footer"><span>Illustrative model overround: {(probability.modelOverround * 100).toFixed(0)}%</span><span>Derived from {matchState.eventCount} synthetic events · refreshes with the active feed</span></div>
           </section>}
@@ -144,14 +153,14 @@ export default function Home() {
           <div className="split-grid">
             <section className="story-card perception-card">
               <div className="card-label"><span className="number-label">01</span> THE PERCEIVED MATCH</div>
-              <div className="big-perception">“Aston are<br /><i>dominating.</i>”</div>
-              <div className="perception-meter"><div className="meter-label"><span>{astonState?.possessionPct ?? 0}% possession</span><span className="muted">But danger says otherwise</span></div><div className="meter"><i style={{ width: `${astonState?.possessionPct ?? 0}%` }} /><b style={{ left: `${astonState?.possessionPct ?? 0}%` }} /></div></div>
+              <div className="big-perception">“{homeTeamLabel} are<br /><i>controlling.</i>”</div>
+              <div className="perception-meter"><div className="meter-label"><span>{homeTeam?.possessionPct ?? 0}% possession</span><span className="muted">But danger says otherwise</span></div><div className="meter"><i style={{ width: `${homeTeam?.possessionPct ?? 0}%` }} /><b style={{ left: `${homeTeam?.possessionPct ?? 0}%` }} /></div></div>
               <p className="card-note">Possession is loud. Territory is not the same as threat.</p>
             </section>
 
             <section className="story-card evidence-card">
               <div className="card-label evidence-label"><span className="number-label">02</span> THE EVIDENCE MATCH <span className="signal-badge">DATA SAYS</span></div>
-              <h3>Brighton are<br /><span>{matchState.dominantDangerTeamId === "BRI" ? "setting the trap." : "reading the game."}</span></h3>
+              <h3>{awayTeamLabel} are<br /><span>{matchState.dominantDangerTeamId === awayTeam?.teamId ? "setting the trap." : "reading the game."}</span></h3>
               <ul className="evidence-list">{evidence.map((item) => <li key={item}><span className="check-mark">+</span><span>{item}</span></li>)}</ul>
               <button className="text-action" onClick={() => setEvidenceOpen(true)}>Open evidence trail <ArrowUpRight size={14} /></button>
             </section>
