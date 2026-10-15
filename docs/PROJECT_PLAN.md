@@ -139,6 +139,14 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added the repeatable checklist in `docs/QA_CHECKLIST.md`.
 - The only excluded control is the framework-injected Next.js development-tools button.
 
+### Presentation polish
+
+- Added staged page and card entrance animations.
+- Added live pulse, confidence scan, meter fill, timeline stagger, hover lift, and drawer transitions.
+- Added an animated grid atmosphere without decorative blobs or visual noise.
+- Added reduced-motion handling for accessibility.
+- Verified desktop and 390px mobile layouts with no horizontal overflow.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.
