@@ -158,7 +158,7 @@ export function DataIntakePanel({ onClose, onDataReady }: DataIntakePanelProps) 
     <div className="intake-overlay" role="dialog" aria-modal="true" aria-labelledby="intake-title">
       <div className="intake-backdrop" onClick={onClose} />
       <section className="intake-panel">
-        <header className="intake-header"><div><span className="live-label"><span className="tiny-dot" /> INPUT HEALTH / 01</span><h2 id="intake-title">Bring your match data.</h2><p>Second Story profiles the feed before it makes a claim.</p></div><button className="icon-button" onClick={onClose} aria-label="Close data intake"><X size={18} /></button></header>
+        <header className="intake-header"><div><span className="live-label"><span className="tiny-dot" /> INPUT HEALTH / 01</span><h2 id="intake-title">Bring your match data.</h2><p>Second Story profiles the feed before it makes a claim.</p></div><button className="icon-button" autoFocus onClick={onClose} aria-label="Close data intake"><X size={18} /></button></header>
         <label className="upload-zone"><Upload size={21} /><strong>Drop a file to inspect</strong><span>JSON, CSV, or NDJSON · synthetic events only</span><input type="file" accept=".json,.csv,.ndjson,.jsonl,application/json,text/csv" onChange={handleFileChange} /></label>
         <div className="intake-actions"><button className="sample-button" onClick={inspectSample}><FileJson size={15} /> Inspect a sample feed</button><button className="sample-button scenario-button" onClick={runScenario}><WandSparkles size={15} /> Run momentum scenario <Play size={12} /></button></div>
         {isReading && <div className="intake-loading"><LoaderCircle size={16} className="spin" /> Profiling event structure...</div>}

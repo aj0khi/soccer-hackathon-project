@@ -89,6 +89,7 @@ export default function Home() {
   const localizedInsight = leadInsight ? renderLocalizedInsight(leadInsight, locale) : undefined;
   const probability = calculateMatchProbabilities(activeEvents, matchState);
   const evidence = leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? [];
+  const liveSignals = activeEvents.slice(-6).reverse();
   const scrollToSection = (selector: string) => document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cycleView = () => setView(view === "studio" ? "fan" : view === "fan" ? "player" : "studio");
 
@@ -113,6 +114,11 @@ export default function Home() {
         <div className="competition"><span className="competition-kicker">SYNTHETIC MATCH / PREMIER LEAGUE MODEL</span><strong>Riverside Stadium</strong></div>
         <div className="scoreline"><span>{homeTeamLabel}</span><b>{goalCount(homeTeam?.teamId ?? "")}</b><em>—</em><b className="away-score">{goalCount(awayTeam?.teamId ?? "")}</b><span>{awayTeamLabel}</span></div>
         <div className="match-meta"><span>{lastMinute}:00</span><small>{matchState.eventCount} events interpreted</small></div>
+      </section>
+
+      <section className="signal-ticker" aria-label="Recent live signals" aria-live="polite">
+        <div className="ticker-label"><span className="tiny-dot" /> LIVE SIGNALS</div>
+        <div className="ticker-track">{liveSignals.map((event) => <span className="ticker-event" key={event.eventId}><b>{String(event.minute).padStart(2, "0")}:{String(Math.floor(event.timestampMs / 1000) % 60).padStart(2, "0")}</b><strong>{formatEventLabel(event)}</strong><small>{formatTeamLabel(event.teamId)}</small></span>)}</div>
       </section>
 
       <div className="workspace">
@@ -184,7 +190,7 @@ export default function Home() {
       {evidenceOpen && leadInsight && <div className="evidence-overlay" role="dialog" aria-modal="true" aria-labelledby="evidence-title">
         <div className="evidence-backdrop" onClick={() => setEvidenceOpen(false)} />
         <section className="evidence-panel">
-          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> TRACEABLE EXPLANATION</span><h2 id="evidence-title">Why this matters.</h2></div><button className="icon-button" onClick={() => setEvidenceOpen(false)} aria-label="Close evidence trail"><X size={18} /></button></header>
+          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> TRACEABLE EXPLANATION</span><h2 id="evidence-title">Why this matters.</h2></div><button className="icon-button" autoFocus onClick={() => setEvidenceOpen(false)} aria-label="Close evidence trail"><X size={18} /></button></header>
           <p className="evidence-explanation">{leadInsight.explanation}</p>
           <div className="evidence-confidence"><span>INSIGHT CONFIDENCE</span><strong>{leadInsight.confidence}%</strong><div className="confidence-track"><i style={{ width: `${leadInsight.confidence}%` }} /></div></div>
           <div className="evidence-trail-list">{leadInsight.evidence.map((item) => <article key={item.metric}><div className="trail-heading"><strong>{item.metric}</strong><span>{item.comparison}</span></div><div className="trail-value">{item.value}{item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}</div><div className="trail-events"><span>EVENT IDS</span>{item.eventIds.length ? item.eventIds.map((eventId) => <code key={eventId}>{eventId}</code>) : <small>No matching events</small>}</div></article>)}</div>
@@ -194,7 +200,7 @@ export default function Home() {
       {utilityPanel && <div className="utility-overlay" role="dialog" aria-modal="true" aria-labelledby="utility-title">
         <div className="evidence-backdrop" onClick={() => setUtilityPanel(null)} />
         <section className="utility-panel">
-          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> {utilityPanel === "settings" ? "WORKSPACE SETTINGS" : "SECOND STORY GUIDE"}</span><h2 id="utility-title">{utilityPanel === "settings" ? "Tune the lens." : "Read the match differently."}</h2></div><button className="icon-button" onClick={() => setUtilityPanel(null)} aria-label="Close panel"><X size={18} /></button></header>
+          <header className="evidence-panel-header"><div><span className="live-label"><span className="tiny-dot" /> {utilityPanel === "settings" ? "WORKSPACE SETTINGS" : "SECOND STORY GUIDE"}</span><h2 id="utility-title">{utilityPanel === "settings" ? "Tune the lens." : "Read the match differently."}</h2></div><button className="icon-button" autoFocus onClick={() => setUtilityPanel(null)} aria-label="Close panel"><X size={18} /></button></header>
           {utilityPanel === "settings" ? <div className="utility-options"><div><strong>Active audience</strong><span>{view === "player" ? "Player Focus" : view === "fan" ? "Fan Lens" : "Studio"}</span></div><div><strong>Evidence policy</strong><span>Event-linked claims only</span></div><div><strong>Input source</strong><span>{activeEvents.length} normalized synthetic events</span></div><button className="utility-action" onClick={() => { setView("studio"); setUtilityPanel(null); }}>Reset to studio view <ArrowUpRight size={14} /></button></div> : <div className="utility-options"><div><strong>1. Bring data</strong><span>Use Data to inspect a file or run the momentum scenario.</span></div><div><strong>2. Find the second story</strong><span>Compare the perceived match with evidence-backed danger.</span></div><div><strong>3. Change the audience</strong><span>Switch Studio, Fan Lens, or Player Focus without changing the facts.</span></div><div><strong>4. Audit the claim</strong><span>Open the evidence trail to inspect supporting event IDs.</span></div></div>}
         </section>
       </div>}

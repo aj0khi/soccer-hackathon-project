@@ -162,6 +162,12 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added regression tests for both audit findings.
 - Recorded fixed issues, remaining risks, and submission blockers in `docs/AUDIT.md`.
 
+### Professional presentation pass
+
+- Added a live signal ticker beneath the scoreline for continuous event context.
+- Added autofocus to temporary panels for a predictable keyboard flow.
+- Recorded the applied hierarchy, motion, accessibility, and responsive criteria in `docs/DESIGN_PRINCIPLES.md`.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.
