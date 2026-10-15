@@ -119,9 +119,17 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Local Azure CLI validation and deployment remain pending because `az` is not installed in this workspace.
 - Added a student-plan setup and cleanup guide with the Basic tier as the default.
 
-## Current step: recap and multilingual output
+### Recap and multilingual output
 
-The next layer should turn the same grounded insight state into a full-match recap and language-specific renderings while Azure provisioning is pending.
+- Added structured first-half, second-half, and full-time recap sections.
+- Preserved event IDs for each recap section.
+- Added English, Spanish, and French renderings of the same grounded insight.
+- Added language controls to the main match experience.
+- Kept deterministic local rendering as the fallback until Foundry or Translator is connected.
+
+## Current step: live Azure verification and submission polish
+
+The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.
 
 Completed implementation:
 
@@ -134,6 +142,8 @@ Completed implementation:
 - `src/infrastructure/azure/event-hub-source.ts`
 - `src/application/agents/orchestrate-match-intelligence.ts`
 - `src/infrastructure/azure/foundry-config.ts`
+- `src/lib/narrative/build-match-recap.ts`
+- `src/lib/narrative/render-localized-insight.ts`
 - `infra/main.bicep`
 - `src/app/page.tsx` now consumes generated events and derived state.
 
@@ -147,13 +157,13 @@ Foundry mapping definition of done: complete. Role IDs, endpoint configuration, 
 
 Infrastructure definition of done: template complete. Event Hubs resources, example parameters, local secret protection, and deployment instructions are present; Azure CLI deployment remains pending.
 
+Recap and multilingual definition of done: local version complete. Full-match sections carry evidence event IDs, language controls render English/Spanish/French variants, tests/lint/build pass, and cloud-backed translation remains optional.
+
 ## Remaining work
 
-1. **Recap and multilingual output**
-   - Generate first-half, second-half, and full-time recaps with evidence references.
-2. **Live Azure provisioning**
+1. **Live Azure verification**
    - Provision event-driven Azure resources, configure identities, create the three Foundry agents, and verify the live handoffs.
-3. **Submission package**
+2. **Submission package**
    - Final pitch, public demo URL, GitHub repository, English testing instructions, and rights-safe demo assets.
 
 ## Guardrails

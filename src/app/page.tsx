@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   ArrowUpRight,
+  BookOpen,
   ChevronDown,
   CircleHelp,
   Database,
   GitBranch,
   LayoutDashboard,
+  Languages,
   Radio,
   Settings2,
   Sparkles,
@@ -17,7 +19,9 @@ import {
 } from "lucide-react";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { buildMatchRecap } from "@/lib/narrative/build-match-recap";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
+import { renderLocalizedInsight, type SupportedLocale } from "@/lib/narrative/render-localized-insight";
 import type { MatchEvent } from "@/types/match";
 import { DataIntakePanel } from "@/components/data-intake-panel";
 
@@ -61,12 +65,15 @@ export default function Home() {
   const [view, setView] = useState<"studio" | "fan" | "player">("studio");
   const [selectedFork, setSelectedFork] = useState<"pass" | "shot">("pass");
   const [intakeOpen, setIntakeOpen] = useState(false);
+  const [locale, setLocale] = useState<SupportedLocale>("en");
   const [activeEvents, setActiveEvents] = useState<MatchEvent[]>(generatedMatch.events);
   const model = useMemo(() => createDashboardModel(activeEvents), [activeEvents]);
   const { matchState, astonState, brightonState, goalCount, lastMinute, timeline } = model;
   const agentRun = runMatchIntelligenceAgents(activeEvents, audienceProfiles[view]);
   const leadInsight = agentRun.insight;
   const renderedInsight = agentRun.renderedInsight;
+  const recap = leadInsight ? buildMatchRecap(activeEvents, matchState, leadInsight) : undefined;
+  const localizedInsight = leadInsight ? renderLocalizedInsight(leadInsight, locale) : undefined;
   const evidence = leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? [];
 
   return (
@@ -113,6 +120,12 @@ export default function Home() {
             <p className="hero-copy">{renderedInsight?.text ?? "There is not enough validated event data to make this read."}</p>
             <div className="story-proof"><div className="proof-stat"><strong>{matchState.rhythmScore}</strong><span>rhythm score</span></div><div className="proof-stat"><strong>{matchState.chaosScore}</strong><span>chaos score</span></div><div className="proof-stat"><strong>{brightonState?.expectedGoals.toFixed(2) ?? "0.00"}</strong><span>Brighton xG</span></div><div className="proof-source"><GitBranch size={15} /> {leadInsight?.evidence.reduce((total, item) => total + item.eventIds.length, 0) ?? 0} supporting events <ArrowUpRight size={14} /></div></div>
           </section>
+
+          {recap && <section className="story-card recap-card">
+            <div className="recap-header"><div><div className="card-label"><span className="number-label">05</span> THE MATCH RECAP</div><h3><BookOpen size={17} /> {recap.headline}</h3></div><div className="language-picker"><Languages size={14} /><button className={locale === "en" ? "selected" : ""} onClick={() => setLocale("en")}>EN</button><button className={locale === "es" ? "selected" : ""} onClick={() => setLocale("es")}>ES</button><button className={locale === "fr" ? "selected" : ""} onClick={() => setLocale("fr")}>FR</button></div></div>
+            <p className="localized-read">{localizedInsight?.text}</p>
+            <div className="recap-grid">{recap.sections.map((section) => <article key={section.label}><span>{section.label.replace("-", " ")}</span><strong>{section.title}</strong><p>{section.text}</p><small>{section.evidenceEventIds.length} linked events</small></article>)}</div>
+          </section>}
 
           <div className="split-grid">
             <section className="story-card perception-card">
