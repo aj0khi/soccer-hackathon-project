@@ -147,6 +147,14 @@ Second Story turns synthetic football events into evidence-backed match intellig
 - Added reduced-motion handling for accessibility.
 - Verified desktop and 390px mobile layouts with no horizontal overflow.
 
+### Football math and probability
+
+- Added a Probability Lab driven by current score, event-derived xG, and time remaining.
+- Uses an explainable independent Poisson model for projected score outcomes.
+- Shows home win, draw, away win, most likely finish, projected goals, and fair odds.
+- Clearly labels the output as a synthetic model rather than bookmaker or real Premier League data.
+- Documented formulas and limitations in `docs/MODEL_NOTES.md`.
+
 ## Current step: live Azure verification and submission polish
 
 The next layer should verify the deployed cloud path, then finalize the pitch, testing instructions, demo recording, and submission metadata.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { calculateMatchProbabilities } from "@/lib/analytics/calculate-probabilities";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { getFoundryProjectConfig, isFoundryReady } from "@/infrastructure/azure/foundry-config";
 import { normalizeRows } from "@/lib/ingestion/normalize-events";
@@ -29,6 +30,17 @@ describe("match intelligence pipeline", () => {
     expect(state.teams.find((team) => team.teamId === "BRI")?.shots).toBe(1);
     expect(state.teams.find((team) => team.teamId === "BRI")?.expectedGoals).toBe(0.2);
     expect(state.rhythmScore).toBeGreaterThan(0);
+  });
+
+  it("calculates bounded Poisson outcome probabilities from match state", () => {
+    const match = generateSyntheticMatch();
+    const state = aggregateMatchState(match.events);
+    const probabilities = calculateMatchProbabilities(match.events, state);
+    expect(probabilities).toBeDefined();
+    expect(probabilities?.outcomes).toHaveLength(3);
+    expect(probabilities?.outcomes.every((outcome) => outcome.probability >= 0 && outcome.probability <= 100)).toBe(true);
+    expect(probabilities?.outcomes.every((outcome) => outcome.fairOdds >= 1)).toBe(true);
+    expect(probabilities?.mostLikelyScore).toMatch(/^\d+-\d+$/);
   });
 
   it("generates a repeatable scenario with evidence-backed insight", () => {

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { runMatchIntelligenceAgents } from "@/application/agents/orchestrate-match-intelligence";
 import { aggregateMatchState } from "@/lib/analytics/aggregate-match-state";
+import { calculateMatchProbabilities } from "@/lib/analytics/calculate-probabilities";
 import { buildMatchRecap } from "@/lib/narrative/build-match-recap";
 import { generateSyntheticMatch } from "@/lib/simulation/generate-match";
 import { renderLocalizedInsight, type SupportedLocale } from "@/lib/narrative/render-localized-insight";
@@ -77,6 +78,7 @@ export default function Home() {
   const renderedInsight = agentRun.renderedInsight;
   const recap = leadInsight ? buildMatchRecap(activeEvents, matchState, leadInsight) : undefined;
   const localizedInsight = leadInsight ? renderLocalizedInsight(leadInsight, locale) : undefined;
+  const probability = calculateMatchProbabilities(activeEvents, matchState);
   const evidence = leadInsight?.evidence.map((item) => `${item.comparison}: ${item.value}${item.unit === "%" ? "%" : ` ${item.unit ?? ""}`}`) ?? [];
   const scrollToSection = (selector: string) => document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
   const cycleView = () => setView(view === "studio" ? "fan" : view === "fan" ? "player" : "studio");
@@ -130,6 +132,13 @@ export default function Home() {
             <div className="recap-header"><div><div className="card-label"><span className="number-label">05</span> THE MATCH RECAP</div><h3><BookOpen size={17} /> {recap.headline}</h3></div><div className="language-picker"><Languages size={14} /><button className={locale === "en" ? "selected" : ""} onClick={() => setLocale("en")}>EN</button><button className={locale === "es" ? "selected" : ""} onClick={() => setLocale("es")}>ES</button><button className={locale === "fr" ? "selected" : ""} onClick={() => setLocale("fr")}>FR</button></div></div>
             <p className="localized-read">{localizedInsight?.text}</p>
             <div className="recap-grid">{recap.sections.map((section) => <article key={section.label}><span>{section.label.replace("-", " ")}</span><strong>{section.title}</strong><p>{section.text}</p><small>{section.evidenceEventIds.length} linked events</small></article>)}</div>
+          </section>}
+
+          {probability && <section className="story-card probability-card">
+            <div className="probability-header"><div><div className="card-label"><span className="number-label">06</span> PROBABILITY LAB</div><h3>What does the match math say?</h3></div><span className="signal-badge">SYNTHETIC MODEL / NO MARKET FEED</span></div>
+            <div className="probability-summary"><div><strong>{probability.projectedHomeGoals.toFixed(2)}</strong><span>projected AST goals</span></div><div><strong>{probability.projectedAwayGoals.toFixed(2)}</strong><span>projected BRI goals</span></div><div><strong>{probability.mostLikelyScore}</strong><span>most likely finish</span></div><div><strong>{probability.remainingMinutes}&apos;</strong><span>minutes modelled</span></div></div>
+            <div className="probability-body"><div className="poisson-note"><span className="live-label"><span className="tiny-dot" /> POISSON SCORE MODEL</span><p><code>P(k) = e<sup>-λ</sup> λ<sup>k</sup> / k!</code></p><small>Remaining-goal probability is estimated from validated xG, current score, and time left. Fair odds are the reciprocal of model probability, not a recommendation.</small></div><div className="outcome-list">{probability.outcomes.map((outcome) => <div className="outcome-row" key={outcome.outcome}><div><strong>{outcome.label}</strong><span>{outcome.fairOdds.toFixed(2)} fair odds</span></div><div className="outcome-bar"><i style={{ width: `${outcome.probability}%` }} /></div><b>{outcome.probability}%</b></div>)}</div></div>
+            <div className="probability-footer"><span>Illustrative model overround: {(probability.modelOverround * 100).toFixed(0)}%</span><span>Derived from {matchState.eventCount} synthetic events · refreshes with the active feed</span></div>
           </section>}
 
           <div className="split-grid">
